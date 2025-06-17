@@ -1,6 +1,9 @@
 # ベースとなる公式Pythonイメージを指定します。'slim'は軽量版です。
 FROM python:3.10-slim
 
+# LightGBMが必要とするOSのライブラリ(libgomp1)をインストール
+RUN apt-get update && apt-get install -y libgomp1
+
 # コンテナ内での作業ディレクトリを設定します。
 WORKDIR /app
 
