@@ -1,46 +1,70 @@
-from flask import Blueprint, render_template, send_from_directory
-import pandas as pd
 import os
+import pandas as pd
+from flask import (
+    Blueprint, render_template, current_app,
+    send_from_directory, make_response
+)
 
-# Blueprintオブジェクトを作成
-home_bp = Blueprint('home', __name__, template_folder='../../templates', static_folder='../../static')
-
-# このファイルの場所を基準に、一つ上の階層(プロジェクトルート)のパスを取得
-DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..')
+home_bp = Blueprint(
+    'home', __name__,
+    template_folder='../templates',
+    static_folder='../static'
+)
 
 @home_bp.route('/')
-def home():
+def index():
+    """ホームページを表示する"""
     return render_template('home.html')
 
 @home_bp.route('/datasets')
 def datasets():
+    """サンプルデータページを表示する"""
     try:
-        titanic_train_df = pd.read_csv(os.path.join(DATA_DIR, 'titanic_train.csv'), index_col=0).head()
-        titanic_predict_df = pd.read_csv(os.path.join(DATA_DIR, 'titanic_predict.csv'), index_col=0).head()
-        california_train_df = pd.read_csv(os.path.join(DATA_DIR, 'california_train.csv'), index_col=0).head()
-        california_predict_df = pd.read_csv(os.path.join(DATA_DIR, 'california_predict.csv'), index_col=0).head()
+        # プロジェクトのルートディレクトリからファイルパスを生成
+        root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        
+        titanic_train_path = os.path.join(root_path, 'titanic_train.csv')
+        titanic_predict_path = os.path.join(root_path, 'titanic_predict.csv')
+        california_train_path = os.path.join(root_path, 'california_train.csv')
+        california_predict_path = os.path.join(root_path, 'california_predict.csv')
 
-        # pandas DataFrameをHTMLテーブルに変換
-        # classes属性でCSSからデザインを適用できるようにする
+        # 各CSVファイルを読み込み、先頭5行だけをHTMLに変換
+        titanic_train_df = pd.read_csv(titanic_train_path, index_col=0).head()
+        titanic_predict_df = pd.read_csv(titanic_predict_path, index_col=0).head()
+        california_train_df = pd.read_csv(california_train_path, index_col=0).head()
+        california_predict_df = pd.read_csv(california_predict_path, index_col=0).head()
+
         context = {
-            'titanic_train_html': titanic_train_df.to_html(classes='dataframe', border=0),
-            'titanic_predict_html': titanic_predict_df.to_html(classes='dataframe', border=0),
-            'california_train_html': california_train_df.to_html(classes='dataframe', border=0),
-            'california_predict_html': california_predict_df.to_html(classes='dataframe', border=0)
+            'titanic_train_html': titanic_train_df.to_html(classes='table table-sm table-striped', border=0),
+            'titanic_predict_html': titanic_predict_df.to_html(classes='table table-sm table-striped', border=0),
+            'california_train_html': california_train_df.to_html(classes='table table-sm table-striped', border=0),
+            'california_predict_html': california_predict_df.to_html(classes='table table-sm table-striped', border=0),
         }
-    except FileNotFoundError:
-        context = { 'error': 'CSVファイルが見つかりません。データセット生成スクリプトを実行してください。' }
+    except Exception as e:
+        context = {'error': f"サンプルデータの読み込みに失敗しました: {e}"}
 
     return render_template('datasets.html', **context)
 
-
 @home_bp.route('/download/<filename>')
 def download_file(filename):
-    safe_files = [
-        "titanic_train.csv", "titanic_predict.csv",
-        "california_train.csv", "california_predict.csv"
-    ]
-    if filename in safe_files:
-        return send_from_directory(DATA_DIR, filename, as_attachment=True)
-    else:
-        return "File not found.", 404
+    """サンプルデータファイルをダウンロードさせる"""
+    try:
+        # プロジェクトのルートディレクトリを取得して、そこからファイルを送信
+        root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return send_from_directory(root_path, filename, as_attachment=True)
+    except FileNotFoundError:
+        return "ファイルが見つかりません。", 404
+
+@home_bp.route('/sitemap.xml')
+def sitemap():
+    """sitemap.xmlを返すためのルート"""
+    try:
+        # プロジェクトのルートディレクトリを取得
+        root_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # send_from_directory を使って安全にファイルを返す
+        response = make_response(send_from_directory(root_path, 'sitemap.xml'))
+        # 正しいContent-Typeヘッダーを設定
+        response.headers['Content-Type'] = 'application/xml'
+        return response
+    except FileNotFoundError:
+        return "サイトマップが見つかりません。", 404
