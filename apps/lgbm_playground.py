@@ -11,12 +11,13 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import japanize_matplotlib
+import uuid
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.preprocessing import LabelEncoder
 from flask import (
     Blueprint, render_template, request, session, flash,
-    current_app, url_for, redirect
+    current_app, url_for, redirect, jsonify
 )
 
 # Blueprintの定義
@@ -25,6 +26,16 @@ lgbm_bp = Blueprint(
     template_folder='../templates',
     static_folder='../static'
 )
+
+@lgbm_bp.route('/progress/<task_id>')
+def progress(task_id):
+    """進捗状況を返すAPIエンドポイント"""
+    progress_file = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{task_id}.prog')
+    if os.path.exists(progress_file):
+        with open(progress_file, 'r') as f:
+            message = f.read()
+        return jsonify({'message': message})
+    return jsonify({'message': '進捗ファイルが見つかりません...'})
 
 def _prepare_data(df, target_column, feature_columns, categorical_features):
     """データの前処理（ラベルエンコーディング）を行う内部関数"""
@@ -50,22 +61,14 @@ def _create_feature_importance_plot(model, feature_names):
     feature_importance = pd.DataFrame({'feature': feature_names, 'importance': importance})
     feature_importance = feature_importance.sort_values('importance', ascending=False).head(20)
 
-    # --- ▼▼▼ ここから修正 ▼▼▼ ---
-
     plt.figure(figsize=(10, 8))
     plt.barh(feature_importance['feature'], feature_importance['importance'])
-    
-    # 各部分のフォントサイズを調整
-    plt.title('予測に重要な影響を与えた情報 Top 20', fontsize=18) # タイトルを大きく
-    plt.xlabel('重要度', fontsize=14)                     # X軸ラベルを大きく
-    plt.tick_params(axis='x', labelsize=12)              # X軸の目盛りを大きく
-    plt.tick_params(axis='y', labelsize=20)              # Y軸の項目名（特徴量）を大きく
-
+    plt.title('予測に重要な影響を与えた情報 Top 20', fontsize=18)
+    plt.xlabel('重要度', fontsize=14)
+    plt.tick_params(axis='x', labelsize=12)
+    plt.tick_params(axis='y', labelsize=20)
     plt.gca().invert_yaxis()
-    # tight_layout()でラベルがはみ出ないように自動調整
     plt.tight_layout()
-
-    # --- ▲▲▲ ここまで修正 ▲▲▲ ---
 
     buf = io.BytesIO()
     plt.savefig(buf, format='png')
@@ -124,6 +127,14 @@ def playground():
             return redirect(url_for('lgbm_playground.playground'))
 
         elif action == 'start_optimization':
+            # --- ▼▼▼ 修正点: フォームからタスクIDを受け取る ▼▼▼ ---
+            task_id = request.form.get('task_id')
+            if not task_id:
+                flash('タスクIDがありません。', 'danger')
+                return redirect(url_for('lgbm_playground.playground'))
+            
+            progress_file = os.path.join(current_app.config['UPLOAD_FOLDER'], f'{task_id}.prog')
+
             target_column = request.form['target_column']
             problem_type = request.form['problem_type']
             feature_columns = request.form.getlist('feature_columns')
@@ -132,6 +143,11 @@ def playground():
 
             df = pd.read_csv(os.path.join(current_app.config['UPLOAD_FOLDER'], context['filename']), index_col=0)
             X, y, _ = _prepare_data(df, target_column, feature_columns, categorical_features)
+
+            def progress_callback(study, trial):
+                message = f"最適化を実行中... ({trial.number + 1} / {n_trials} トライアル)"
+                with open(progress_file, 'w') as f:
+                    f.write(message)
 
             def objective(trial):
                 params = {
@@ -154,15 +170,21 @@ def playground():
                 scores = cross_val_score(model, X, y, cv=kf, scoring='r2' if problem_type == 'regression' else 'accuracy')
                 return np.mean(scores)
             
+            with open(progress_file, 'w') as f:
+                f.write("最適化を開始します...")
+
             study = optuna.create_study(direction='maximize')
-            study.optimize(objective, n_trials=n_trials, show_progress_bar=False)
+            study.optimize(objective, n_trials=n_trials, callbacks=[progress_callback], show_progress_bar=False)
             
             context['best_params'] = study.best_params
             context['optuna_results'] = {
                 'best_value': study.best_value,
                 'best_params_str': str(study.best_params)
             }
-            flash(f'Optunaによる最適化が完了しました。最適なパラメータがセットされました。', 'success')
+            flash('Optunaによる最適化が完了しました。最適なパラメータがセットされました。', 'success')
+            
+            if os.path.exists(progress_file):
+                os.remove(progress_file)
 
         elif action == 'start_learning':
             params = {
@@ -187,7 +209,6 @@ def playground():
             df = pd.read_csv(os.path.join(current_app.config['UPLOAD_FOLDER'], context['filename']), index_col=0)
             X, y, label_encoders = _prepare_data(df, target_column, feature_columns, categorical_features)
             
-            # 質的変数の「名前」を「列番号」に変換
             final_feature_names = X.columns.tolist()
             categorical_feature_indices = [final_feature_names.index(col) for col in categorical_features if col in final_feature_names]
 

@@ -7,7 +7,7 @@
     <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
         <span class="visually-hidden">Loading...</span>
     </div>
-    <p class="mt-3">処理中です。しばらくお待ちください...</p>
+    <p id="loading-message" class="mt-3">処理中です。しばらくお待ちください...</p>
 </div>
 
 <div class="row">
@@ -29,6 +29,8 @@
 
             {% if filename %}
             <form id="main-form" action="/playground" method="post">
+                <input type="hidden" name="task_id">
+                
                 <input type="hidden" name="filename" value="{{ filename }}">
                 {% if predict_filename %}<input type="hidden" name="predict_filename" value="{{ predict_filename }}">{% endif %}
                 {% if default_categoricals %}{% for col in default_categoricals %}<input type="hidden" name="default_categoricals" value="{{ col }}">{% endfor %}{% endif %}
@@ -104,7 +106,7 @@
                                 <p>最適なパラメータの組み合わせを自動で探索します。</p>
                                 <label for="n_trials" class="form-label">試行回数 (Trials)</label>
                                 <input type="number" name="n_trials" value="20" step="10" class="form-control mb-2">
-                                <button type="submit" name="action" value="start_optimization" class="btn btn-success w-100 loading-trigger">最適化スタート</button>
+                                <button type="submit" id="optimize-btn" name="action" value="start_optimization" class="btn btn-success w-100 loading-trigger">最適化スタート</button>
                             </div>
                         </div>
                     </div>
@@ -184,152 +186,89 @@
         <hr>
 
         {% if not filename %}
-        <div class="accordion" id="howToUseAccordion">
-            <div class="accordion-item">
-                <h2 class="accordion-header">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                        🤔 アプリの使いかたガイド
-                    </button>
-                </h2>
-                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#howToUseAccordion">
-                    <div class="accordion-body">
-                        <h5>1. データの準備</h5>
-                        <ul><li>予測したい「答え」の列を含む、CSV形式の学習用データをご用意ください。</li><li>必要であれば、「サンプルデータ」ページのデータをダウンロードしてお使いいただけます。</li></ul>
-                        <h5>2. データと設定</h5>
-                        <ul><li>サイドバーの「ファイルを選択」ボタンから、学習用CSVデータをアップロードします。</li><li><strong>目的変数</strong>: 予測したい「答え」の列を指定します。</li><li><strong>説明変数</strong>: 予測の手がかりとなる列を選びます。（目的変数は自動で除外されます）</li></ul>
-                        <h5>3. 学習と分析</h5>
-                        <ul><li>「学習スタート」ボタンを押すと、モデルの評価と学習が始まります。</li></ul>
-                        <h5>4. 未来の予測</h5>
-                        <ul><li>学習後に出現する「未来を予測してみよう！」セクションで、答えの列がない新しいCSVをアップロードし、予測を実行します。</li></ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="accordion" id="howToUseAccordion"><div class="accordion-item"><h2 class="accordion-header"><button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">🤔 アプリの使いかたガイド</button></h2><div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#howToUseAccordion"><div class="accordion-body"><h5>1. データの準備</h5><ul><li>予測したい「答え」の列を含む、CSV形式の学習用データをご用意ください。</li><li>必要であれば、「サンプルデータ」ページのデータをダウンロードしてお使いいただけます。</li></ul><h5>2. データと設定</h5><ul><li>サイドバーの「ファイルを選択」ボタンから、学習用CSVデータをアップロードします。</li><li><strong>目的変数</strong>: 予測したい「答え」の列を指定します。</li><li><strong>説明変数</strong>: 予測の手がかりとなる列を選びます。（目的変数は自動で除外されます）</li></ul><h5>3. 学習と分析</h5><ul><li>「学習スタート」ボタンを押すと、モデルの評価と学習が始まります。</li></ul><h5>4. 未来の予測</h5><ul><li>学習後に出現する「未来を予測してみよう！」セクションで、答えの列がない新しいCSVをアップロードし、予測を実行します。</li></ul></div></div></div></div>
         {% endif %}
 
         {% if filename %}
-            <div class="card shadow-sm mb-3">
-                <div class="card-header">1. データのプレビュー</div>
-                <div class="card-body">
-                    <p>ファイル名: <strong>{{ filename }}</strong> | サイズ: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列</strong></p>
-                    <div class="table-responsive">
-                        {{ df_preview_html|safe }}
-                    </div>
-                </div>
-            </div>
+            <div class="card shadow-sm mb-3"><div class="card-header">1. データのプレビュー</div><div class="card-body"><p>ファイル名: <strong>{{ filename }}</strong> | サイズ: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列</strong></p><div class="table-responsive">{{ df_preview_html|safe }}</div></div></div>
         {% endif %}
         
         {% if optuna_results %}
-        <div class="card text-center shadow-sm mb-3">
-            <div class="card-header">🤖 Optuna 最適化結果</div>
-            <div class="card-body">
-                <h5 class="card-title">ベストスコア</h5>
-                <p class="display-4">{{ "%.4f"|format(optuna_results.best_value) }}</p>
-                <p class="card-text text-muted">見つかった最適パラメータが左のフォームに設定されました。</p>
-                <details><summary>詳細パラメータを見る</summary><pre class="bg-light p-2 rounded"><code>{{ optuna_results.best_params_str }}</code></pre></details>
-            </div>
-        </div>
+        <div class="card text-center shadow-sm mb-3"><div class="card-header">🤖 Optuna 最適化結果</div><div class="card-body"><h5 class="card-title">ベストスコア</h5><p class="display-4">{{ "%.4f"|format(optuna_results.best_value) }}</p><p class="card-text text-muted">見つかった最適パラメータが左のフォームに設定されました。</p><details><summary>詳細パラメータを見る</summary><pre class="bg-light p-2 rounded"><code>{{ optuna_results.best_params_str }}</code></pre></details></div></div>
         {% endif %}
 
         {% if results %}
         <hr>
-        <div class="row">
-            <div class="col-md-6 mb-3">
-                <div class="card text-center shadow-sm h-100">
-                    <div class="card-header">📝 モデルの成績表</div>
-                    <div class="card-body">
-                        <h5 class="card-title">{{ results.score_metric_name }}</h5>
-                        <p class="display-4">{{ "%.4f"|format(results.mean_score) }}</p>
-                        <p class="card-text text-muted">± {{ "%.4f"|format(results.std_score) }} (交差検証での標準偏差)</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-3">
-                <div class="card shadow-sm h-100">
-                    <div class="card-header">🔑 予測のカギとなった情報</div>
-                    <div class="card-body">
-                        <img src="data:image/png;base64,{{ results.plot_image }}" alt="Feature Importance" class="img-fluid">
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr>
-        <div id="prediction-anchor" class="card shadow-sm mb-3">
-            <div class="card-header">🔮 未来を予測してみよう！</div>
-            <div class="card-body">
-                <p>学習させたモデルを使って、答えの列がない新しいデータの未来を予測します。</p>
-                <form id="predict-form" action="/playground#prediction-anchor" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="action" value="predict">
-                    <input type="hidden" name="filename" value="{{ filename }}">
-                    <label for="predict_file" class="form-label">予測したいCSVファイルをアップロード</label>
-                    <div class="input-group">
-                        <input type="file" name="predict_file" id="predict_file" class="form-control" required>
-                        <button type="submit" class="btn btn-info loading-trigger">🚀 予測を実行</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <div class="row"><div class="col-md-6 mb-3"><div class="card text-center shadow-sm h-100"><div class="card-header">📝 モデルの成績表</div><div class="card-body"><h5 class="card-title">{{ results.score_metric_name }}</h5><p class="display-4">{{ "%.4f"|format(results.mean_score) }}</p><p class="card-text text-muted">± {{ "%.4f"|format(results.std_score) }} (交差検証での標準偏差)</p></div></div></div><div class="col-md-6 mb-3"><div class="card shadow-sm h-100"><div class="card-header">🔑 予測のカギとなった情報</div><div class="card-body"><img src="data:image/png;base64,{{ results.plot_image }}" alt="Feature Importance" class="img-fluid"></div></div></div></div><hr>
+        <div id="prediction-anchor" class="card shadow-sm mb-3"><div class="card-header">🔮 未来を予測してみよう！</div><div class="card-body"><p>学習させたモデルを使って、答えの列がない新しいデータの未来を予測します。</p><form id="predict-form" action="/playground#prediction-anchor" method="post" enctype="multipart/form-data"><input type="hidden" name="action" value="predict"><input type="hidden" name="filename" value="{{ filename }}"><label for="predict_file" class="form-label">予測したいCSVファイルをアップロード</label><div class="input-group"><input type="file" name="predict_file" id="predict_file" class="form-control" required><button type="submit" class="btn btn-info loading-trigger">🚀 予測を実行</button></div></form></div></div>
         {% endif %}
 
         {% if prediction_results_html %}
-        <div id="prediction-result-anchor" class="card shadow-sm mb-3">
-            <div class="card-header">予測結果</div>
-            <div class="card-body">
-                {% if prediction_score %}
-                <div class="alert alert-success">
-                    🎯 予測の答え合わせ結果 ({{ prediction_score.metric_name }}): <strong>{{ "%.4f"|format(prediction_score.score) }}</strong>
-                </div>
-                {% endif %}
-                <div class="table-responsive">{{ prediction_results_html|safe }}</div>
-                <hr>
-                <h5><i class="bi bi-search"></i> 個別の予測の「理由」を分析 (SHAP)</h5>
-                <p>分析したい行の番号（インデックス）を選択して、AIの思考回路を覗いてみましょう。</p>
-                <form action="/playground#shap-result-anchor" method="post">
-                    <input type="hidden" name="action" value="show_shap"><input type="hidden" name="filename" value="{{ filename }}"><input type="hidden" name="predict_filename" value="{{ predict_filename }}">
-                    <div class="input-group">
-                        <select name="shap_target_index" class="form-select">
-                            {% for index in prediction_indices %}<option value="{{ index }}">{{ index }}</option>{% endfor %}
-                        </select>
-                        <button type="submit" class="btn btn-secondary loading-trigger">理由を分析</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <div id="prediction-result-anchor" class="card shadow-sm mb-3"><div class="card-header">予測結果</div><div class="card-body">{% if prediction_score %}<div class="alert alert-success">🎯 予測の答え合わせ結果 ({{ prediction_score.metric_name }}): <strong>{{ "%.4f"|format(prediction_score.score) }}</strong></div>{% endif %}<div class="table-responsive">{{ prediction_results_html|safe }}</div><hr><h5><i class="bi bi-search"></i> 個別の予測の「理由」を分析 (SHAP)</h5><p>分析したい行の番号（インデックス）を選択して、AIの思考回路を覗いてみましょう。</p><form action="/playground#shap-result-anchor" method="post"><input type="hidden" name="action" value="show_shap"><input type="hidden" name="filename" value="{{ filename }}"><input type="hidden" name="predict_filename" value="{{ predict_filename }}"><div class="input-group"><select name="shap_target_index" class="form-select">{% for index in prediction_indices %}<option value="{{ index }}">{{ index }}</option>{% endfor %}</select><button type="submit" class="btn btn-secondary loading-trigger">理由を分析</button></div></form></div></div>
         {% endif %}
 
         {% if shap_plot_html %}
-        <div id="shap-result-anchor" class="card shadow-sm mb-3">
-            <div class="card-header">SHAP分析結果</div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <h5 class="alert-heading">📈 グラフの読み方</h5>
-                    <p>このグラフは、AIの予測結果（太字の数字）に対して、どの情報がどのように影響したかを示します。</p>
-                    <ul><li><b style="color: #ff0051;">プラスに働いた情報（赤色）</b>：予測値を押し上げる方向に影響しました。</li>
-                        <li><b style="color: #008bfb;">マイナスに働いた情報（青色）</b>：予測値を押し下げる方向に影響しました。</li>
-                    </ul><p class="mb-0"><code>base value</code>は、何も情報がないときの平均的な予測値です。</p>
-                </div>
-                <div class="shap-plot-container">{{ shap_plot_html|safe }}</div>
-            </div>
-        </div>
+        <div id="shap-result-anchor" class="card shadow-sm mb-3"><div class="card-header">SHAP分析結果</div><div class="card-body"><div class="alert alert-info"><h5 class="alert-heading">📈 グラフの読み方</h5><p>このグラフは、AIの予測結果（太字の数字）に対して、どの情報がどのように影響したかを示します。</p><ul><li><b style="color: #ff0051;">プラスに働いた情報（赤色）</b>：予測値を押し上げる方向に影響しました。</li><li><b style="color: #008bfb;">マイナスに働いた情報（青色）</b>：予測値を押し下げる方向に影響しました。</li></ul><p class="mb-0"><code>base value</code>は、何も情報がないときの平均的な予測値です。</p></div><div class="shap-plot-container">{{ shap_plot_html|safe }}</div></div></div>
         {% endif %}
     </section>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // --- ローディング画面の処理 ---
+    let progressInterval;
     const loadingOverlay = document.getElementById('loading-overlay');
+    const loadingMessage = document.getElementById('loading-message');
+    const mainForm = document.getElementById('main-form');
+
+    function checkProgress(taskId) {
+        progressInterval = setInterval(() => {
+            fetch(`/progress/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.message) {
+                        loadingMessage.textContent = data.message;
+                    }
+                })
+                .catch(error => {
+                    console.error('Progress check failed:', error);
+                    clearInterval(progressInterval);
+                });
+        }, 2000);
+    }
+
     const triggers = document.querySelectorAll('.loading-trigger');
     triggers.forEach(trigger => {
-        trigger.addEventListener('click', function() {
+        trigger.addEventListener('click', function(event) {
             const form = this.closest('form');
             if (form && typeof form.checkValidity === 'function' && form.checkValidity()) {
+                
+                loadingMessage.textContent = '処理を開始します。しばらくお待ちください...';
                 loadingOverlay.style.display = 'flex';
+
+                if (this.id === 'optimize-btn') {
+                    // タスクIDをクライアントサイドで生成
+                    const taskId = crypto.randomUUID();
+                    // フォーム内の隠しフィールドに設定
+                    const taskIdInput = mainForm.querySelector('input[name="task_id"]');
+                    if (taskIdInput) {
+                        taskIdInput.value = taskId;
+                    }
+                    // 進捗確認を開始
+                    checkProgress(taskId);
+                }
             }
         });
     });
 
-    // --- UI連動の処理 ---
+    window.addEventListener('pageshow', function(event) {
+        if (loadingOverlay.style.display === 'flex') {
+            loadingOverlay.style.display = 'none';
+            if (progressInterval) {
+                clearInterval(progressInterval);
+            }
+        }
+    });
+
     const targetColumnSelect = document.getElementById('target-column');
     const featureColumnsContainer = document.getElementById('feature-columns-container');
     
