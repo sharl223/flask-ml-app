@@ -1,22 +1,16 @@
+# disksとservicesをトップレベルに定義
+disks:
+  # アプリのデータをまとめて保存する永続ディスクを1つだけ定義
+  - name: app-data
+    # サイズは必要に応じて変更可能 (例: 10GB)
+    sizeGB: 1
+
 services:
-  # サービスの種類を「Webサービス」として定義します。これにより公開URLが発行されます。
   - type: web
-    # Renderのダッシュボードに表示されるサービス名です。
     name: flask-ml-app
-    # 実行環境として、先ほど作成したDockerfileを使用することを指定します。
     env: docker
-    # Renderが定期的にアプリの稼働状況を確認するためのパスです。
-    # ここにアクセスして正常な応答があれば、アプリは「健康」だと判断されます。
     healthCheckPath: /
-    # ディスク設定: コンテナが再起動しても消えない永続的なストレージを割り当てます。
-    disks:
-      # アップロードされたファイルを保存するためのディスク
-      - name: uploads-disk
-        # コンテナ内のどのフォルダにこのディスクを接続するか指定します。
-        mountPath: /app/uploads
-      # 学習済みモデルを保存するためのディスク
-      - name: models-disk
-        mountPath: /app/models
-      # サーバーサイドセッションのファイルを保存するためのディスク
-      - name: flask-session-disk
-        mountPath: /app/flask_session
+    # 上で定義した'app-data'ディスクを、コンテナ内の'/app/data'に接続
+    disk:
+      name: app-data
+      mountPath: /app/data
