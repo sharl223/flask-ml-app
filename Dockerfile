@@ -17,4 +17,4 @@ COPY . .
 
 # コンテナが起動したときに実行するコマンドを指定します。
 # ここで、本番用サーバーGunicornを使ってアプリを起動します。
-CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "2", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:10000", "--workers", "2", "--timeout", "300", "app:app"]
