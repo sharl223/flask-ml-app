@@ -1,16 +1,12 @@
-# disksとservicesをトップレベルに定義
-disks:
-  # アプリのデータをまとめて保存する永続ディスクを1つだけ定義
-  - name: app-data
-    # サイズは必要に応じて変更可能 (例: 10GB)
-    sizeGB: 1
-
 services:
   - type: web
     name: flask-ml-app
     env: docker
     healthCheckPath: /
-    # 上で定義した'app-data'ディスクを、コンテナ内の'/app/data'に接続
+    # plan: free # 無料プランを明示的に指定する場合（任意）
+    
+    # 永続ディスクの定義とマウントをここで行います
     disk:
       name: app-data
       mountPath: /app/data
+      sizeGB: 1
