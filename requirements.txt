@@ -1,0 +1,13 @@
+flask
+pandas
+lightgbm
+scikit-learn
+optuna
+shap
+seaborn
+joblib
+matplotlib
+numpy
+japanize-matplotlib
+Flask-Session
+gunicorn

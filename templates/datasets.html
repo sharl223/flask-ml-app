@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}サンプルデータ置き場{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">📚 サンプルデータ置き場</h1>
+    <div class="alert alert-primary" role="alert">
+        <p class="mb-0">💡 AIモデルの学習と性能テストを体験できるよう、2種類のデータセットを用意しました。</p>
+        <hr>
+        <ol class="mb-0">
+            <li><strong>学習用データ</strong>をダウンロードし、Playgroundでモデルを<strong>学習</strong>させます。</li>
+            <li><strong>予測用データ</strong>をダウンロードし、学習後のモデルで<strong>予測</strong>を実行します。</li>
+        </ol>
+    </div>
+    <hr class="my-4">
+
+    <h2>🚢 タイタニック号の生存者を探せ！ (分類問題)</h2>
+    <p>乗客のプロフィールから生存者を予測する分類問題。</p>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">1. 学習用データ</h5>
+                    <a href="/download/titanic_train.csv" class="btn btn-primary w-100 mb-3"><i class="bi bi-download"></i> titanic_train.csv をダウンロード</a>
+                    <div class="table-responsive">
+                        {{ titanic_train_html|safe if titanic_train_html else error }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">2. 予測用データ</h5>
+                    <a href="/download/titanic_predict.csv" class="btn btn-secondary w-100 mb-3"><i class="bi bi-download"></i> titanic_predict.csv をダウンロード</a>
+                    <div class="table-responsive">
+                        {{ titanic_predict_html|safe if titanic_predict_html else '' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr class="my-4">
+
+    <h2>🏡 カリフォルニアの住宅価格を当てろ！ (回帰問題)</h2>
+    <p>地域の情報から住宅価格を予測する回帰問題。</p>
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">1. 学習用データ</h5>
+                    <a href="/download/california_train.csv" class="btn btn-primary w-100 mb-3"><i class="bi bi-download"></i> california_train.csv をダウンロード</a>
+                    <div class="table-responsive">
+                        {{ california_train_html|safe if california_train_html else error }}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">2. 予測用データ</h5>
+                    <a href="/download/california_predict.csv" class="btn btn-secondary w-100 mb-3"><i class="bi bi-download"></i> california_predict.csv をダウンロード</a>
+                    <div class="table-responsive">
+                        {{ california_predict_html|safe if california_predict_html else '' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

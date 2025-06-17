@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Session and instance folders
+flask_session/
+instance/
+
+# OS-specific files
+.DS_Store
+Thumbs.db

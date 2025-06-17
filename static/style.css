@@ -1,0 +1,23 @@
+/* style.css (Bootstrapと共存させるためのカスタムスタイル) */
+
+/* 長時間かかる処理中に表示するローディング画面のスタイル */
+#loading-overlay {
+    /* JavaScriptでdisplay: flex;に切り替えて表示 */
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1060; /* Bootstrapのモーダル(1050)より手前に表示 */
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+}
+
+/* SHAPのプロットがコンテナからはみ出さないように調整 */
+.shap-plot-container div {
+    max-width: 100%;
+}

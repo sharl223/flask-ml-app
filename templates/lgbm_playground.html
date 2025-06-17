@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}LightGBM Playground{% endblock %}
+
+{% block content %}
+<div id="loading-overlay">
+    <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3">処理中です。しばらくお待ちください...</p>
+</div>
+
+<div class="row">
+    <aside class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <h2><i class="bi bi-sliders"></i> 設定</h2>
+            
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">1. 学習用データ</h5>
+                    <form action="/playground" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload">
+                        <p>ファイル: <strong>{{ filename or '未選択' }}</strong></p>
+                        <input type="file" name="file" class="form-control" required>
+                        <button type="submit" class="btn btn-primary w-100 mt-2 loading-trigger">アップロードして分析開始</button>
+                    </form>
+                </div>
+            </div>
+
+            {% if filename %}
+            <form id="main-form" action="/playground" method="post">
+                <input type="hidden" name="filename" value="{{ filename }}">
+                {% if predict_filename %}<input type="hidden" name="predict_filename" value="{{ predict_filename }}">{% endif %}
+                {% if default_categoricals %}{% for col in default_categoricals %}<input type="hidden" name="default_categoricals" value="{{ col }}">{% endfor %}{% endif %}
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">2. 目的変数と問題タイプ</h5>
+                        <div class="mb-2">
+                            <label for="target-column" class="form-label">目的変数を選んでください</label>
+                            <select name="target_column" id="target-column" class="form-select">
+                                {% set current_target = form_values.get('target_column', [columns[0]])[0] %}
+                                {% for column in columns %}<option value="{{ column }}" {% if column == current_target %}selected{% endif %}>{{ column }}</option>{% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">このタスクの種類を選択してください</label>
+                            <div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="regression" name="problem_type" value="regression" {% if form_values.get('problem_type', ['regression'])[0] == 'regression' %}checked{% endif %}>
+                                    <label class="form-check-label" for="regression">回帰</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" id="classification" name="problem_type" value="classification" {% if form_values.get('problem_type', [''])[0] == 'classification' %}checked{% endif %}>
+                                    <label class="form-check-label" for="classification">分類</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">3. 説明変数の選択</h5>
+                        <div id="feature-columns-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                            {% set selected_features = form_values.get('feature_columns', columns) %}
+                            {% for column in columns %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="feat_{{ column }}" name="feature_columns" value="{{ column }}" {% if column in selected_features %}checked{% endif %}>
+                                <label class="form-check-label" for="feat_{{ column }}">{{ column }}</label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">4. 質的変数の指定 (オプション)</h5>
+                        <div id="categorical-features-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
+                            {% set is_after_upload = not form_values.get('action') %}
+                            {% set selected_categoricals = form_values.get('categorical_features', []) %}
+                            {% set auto_categoricals = default_categoricals or [] %}
+                            {% set current_target = form_values.get('target_column', [columns[0]])[0] %}
+                            {% for column in columns %}{% if column != current_target %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="cat_{{ column }}" name="categorical_features" value="{{ column }}" {% if column in selected_categoricals or (is_after_upload and column in auto_categoricals) %}checked{% endif %}>
+                                <label class="form-check-label" for="cat_{{ column }}">{{ column }}</label>
+                            </div>
+                            {% endif %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion mb-3 shadow-sm" id="accordionOptuna">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOptuna" aria-expanded="false" aria-controls="collapseOptuna">
+                                🤖 パラメータ自動最適化 (Optuna)
+                            </button>
+                        </h2>
+                        <div id="collapseOptuna" class="accordion-collapse collapse" data-bs-parent="#accordionOptuna">
+                            <div class="accordion-body">
+                                <p>最適なパラメータの組み合わせを自動で探索します。</p>
+                                <label for="n_trials" class="form-label">試行回数 (Trials)</label>
+                                <input type="number" name="n_trials" value="20" step="10" class="form-control mb-2">
+                                <button type="submit" name="action" value="start_optimization" class="btn btn-success w-100 loading-trigger">最適化スタート</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">5. ハイパーパラメータ調整</h5>
+                        <p class="text-muted small">Optunaで見つかった最適値を自動でセットします。</p>
+                        {% set p = best_params or {} %}
+                        {% set v = form_values %}
+                        <div class="mb-2">
+                            <label class="form-label">学習率</label>
+                            <input type="number" name="learning_rate" value="{{ p.learning_rate if p else v.get('learning_rate', [0.1])[0] }}" step="0.01" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label for="n_estimators" class="form-label">木の数: <output id="n_estimators_output" class="d-inline">{{ p.n_estimators if p else v.get('n_estimators', [100])[0] }}</output></label>
+                            <input type="range" name="n_estimators" min="50" max="1000" value="{{ p.n_estimators if p else v.get('n_estimators', [100])[0] }}" step="50" class="form-range" oninput="n_estimators_output.value = this.value">
+                        </div>
+                        <div class="mb-2">
+                            <label for="max_depth" class="form-label">木の深さ: <output id="max_depth_output" class="d-inline">{{ p.max_depth if p else v.get('max_depth', [7])[0] }}</output></label>
+                            <input type="range" name="max_depth" min="3" max="50" value="{{ p.max_depth if p else v.get('max_depth', [7])[0] }}" class="form-range" oninput="max_depth_output.value = this.value">
+                        </div>
+                         <div class="mb-2">
+                            <label for="num_leaves" class="form-label">葉の数: <output id="num_leaves_output" class="d-inline">{{ p.num_leaves if p else v.get('num_leaves', [31])[0] }}</output></label>
+                            <input type="range" name="num_leaves" min="10" max="100" value="{{ p.num_leaves if p else v.get('num_leaves', [31])[0] }}" class="form-range" oninput="num_leaves_output.value = this.value">
+                        </div>
+                        <div class="mb-2">
+                            <label for="subsample" class="form-label">行サンプリング率: <output id="subsample_output" class="d-inline">{{ p.subsample if p else v.get('subsample', [0.8])[0] }}</output></label>
+                            <input type="range" name="subsample" min="0.1" max="1.0" value="{{ p.subsample if p else v.get('subsample', [0.8])[0] }}" step="0.1" class="form-range" oninput="subsample_output.value = this.value">
+                        </div>
+                         <div class="mb-2">
+                            <label for="colsample_bytree" class="form-label">列サンプリング率: <output id="colsample_bytree_output" class="d-inline">{{ p.colsample_bytree if p else v.get('colsample_bytree', [0.8])[0] }}</output></label>
+                            <input type="range" name="colsample_bytree" min="0.1" max="1.0" value="{{ p.colsample_bytree if p else v.get('colsample_bytree', [0.8])[0] }}" step="0.1" class="form-range" oninput="colsample_bytree_output.value = this.value">
+                        </div>
+                         <div class="mb-2">
+                            <label class="form-label">L1正則化</label>
+                            <input type="number" name="reg_alpha" value="{{ p.reg_alpha if p else v.get('reg_alpha', [0.0])[0] }}" step="0.1" class="form-control">
+                        </div>
+                         <div class="mb-2">
+                            <label class="form-label">L2正則化</label>
+                            <input type="number" name="reg_lambda" value="{{ p.reg_lambda if p else v.get('reg_lambda', [1.0])[0] }}" step="0.1" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">6. 学習の実行</h5>
+                        <div class="mb-3">
+                            <label for="cv_splits" class="form-label">交差検証の分割数: <output id="cv_output" class="d-inline">{{ form_values.get('cv_splits', [5])[0] }}</output></label>
+                            <input type="range" name="cv_splits" id="cv_splits" min="3" max="10" value="{{ form_values.get('cv_splits', [5])[0] }}" class="form-range" oninput="cv_output.value = this.value">
+                        </div>
+                        <hr>
+                        <button type="submit" name="action" value="start_learning" class="btn btn-primary w-100 btn-lg loading-trigger">✨ 学習スタート</button>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </aside>
+
+    <section class="col-lg-8">
+        <h1><i class="bi bi-play-circle"></i> LightGBM プレイグラウンド</h1>
+        <p>ここでは、あなたのデータを使ってAI予測モデルを育て、その性能を試すことができます。</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <hr>
+
+        {% if not filename %}
+        <div class="accordion" id="howToUseAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                        🤔 アプリの使いかたガイド
+                    </button>
+                </h2>
+                <div id="collapseOne" class="accordion-collapse collapse show" data-bs-parent="#howToUseAccordion">
+                    <div class="accordion-body">
+                        <h5>1. データの準備</h5>
+                        <ul><li>予測したい「答え」の列を含む、CSV形式の学習用データをご用意ください。</li><li>必要であれば、「サンプルデータ」ページのデータをダウンロードしてお使いいただけます。</li></ul>
+                        <h5>2. データと設定</h5>
+                        <ul><li>サイドバーの「ファイルを選択」ボタンから、学習用CSVデータをアップロードします。</li><li><strong>目的変数</strong>: 予測したい「答え」の列を指定します。</li><li><strong>説明変数</strong>: 予測の手がかりとなる列を選びます。（目的変数は自動で除外されます）</li></ul>
+                        <h5>3. 学習と分析</h5>
+                        <ul><li>「学習スタート」ボタンを押すと、モデルの評価と学習が始まります。</li></ul>
+                        <h5>4. 未来の予測</h5>
+                        <ul><li>学習後に出現する「未来を予測してみよう！」セクションで、答えの列がない新しいCSVをアップロードし、予測を実行します。</li></ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if filename %}
+            <div class="card shadow-sm mb-3">
+                <div class="card-header">1. データのプレビュー</div>
+                <div class="card-body">
+                    <p>ファイル名: <strong>{{ filename }}</strong> | サイズ: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列</strong></p>
+                    <div class="table-responsive">
+                        {{ df_preview_html|safe }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if optuna_results %}
+        <div class="card text-center shadow-sm mb-3">
+            <div class="card-header">🤖 Optuna 最適化結果</div>
+            <div class="card-body">
+                <h5 class="card-title">ベストスコア</h5>
+                <p class="display-4">{{ "%.4f"|format(optuna_results.best_value) }}</p>
+                <p class="card-text text-muted">見つかった最適パラメータが左のフォームに設定されました。</p>
+                <details><summary>詳細パラメータを見る</summary><pre class="bg-light p-2 rounded"><code>{{ optuna_results.best_params_str }}</code></pre></details>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if results %}
+        <hr>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card text-center shadow-sm h-100">
+                    <div class="card-header">📝 モデルの成績表</div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ results.score_metric_name }}</h5>
+                        <p class="display-4">{{ "%.4f"|format(results.mean_score) }}</p>
+                        <p class="card-text text-muted">± {{ "%.4f"|format(results.std_score) }} (交差検証での標準偏差)</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">🔑 予測のカギとなった情報</div>
+                    <div class="card-body">
+                        <img src="data:image/png;base64,{{ results.plot_image }}" alt="Feature Importance" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <div id="prediction-anchor" class="card shadow-sm mb-3">
+            <div class="card-header">🔮 未来を予測してみよう！</div>
+            <div class="card-body">
+                <p>学習させたモデルを使って、答えの列がない新しいデータの未来を予測します。</p>
+                <form id="predict-form" action="/playground#prediction-anchor" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="predict">
+                    <input type="hidden" name="filename" value="{{ filename }}">
+                    <label for="predict_file" class="form-label">予測したいCSVファイルをアップロード</label>
+                    <div class="input-group">
+                        <input type="file" name="predict_file" id="predict_file" class="form-control" required>
+                        <button type="submit" class="btn btn-info loading-trigger">🚀 予測を実行</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if prediction_results_html %}
+        <div id="prediction-result-anchor" class="card shadow-sm mb-3">
+            <div class="card-header">予測結果</div>
+            <div class="card-body">
+                {% if prediction_score %}
+                <div class="alert alert-success">
+                    🎯 予測の答え合わせ結果 ({{ prediction_score.metric_name }}): <strong>{{ "%.4f"|format(prediction_score.score) }}</strong>
+                </div>
+                {% endif %}
+                <div class="table-responsive">{{ prediction_results_html|safe }}</div>
+                <hr>
+                <h5><i class="bi bi-search"></i> 個別の予測の「理由」を分析 (SHAP)</h5>
+                <p>分析したい行の番号（インデックス）を選択して、AIの思考回路を覗いてみましょう。</p>
+                <form action="/playground#shap-result-anchor" method="post">
+                    <input type="hidden" name="action" value="show_shap"><input type="hidden" name="filename" value="{{ filename }}"><input type="hidden" name="predict_filename" value="{{ predict_filename }}">
+                    <div class="input-group">
+                        <select name="shap_target_index" class="form-select">
+                            {% for index in prediction_indices %}<option value="{{ index }}">{{ index }}</option>{% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-secondary loading-trigger">理由を分析</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if shap_plot_html %}
+        <div id="shap-result-anchor" class="card shadow-sm mb-3">
+            <div class="card-header">SHAP分析結果</div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">📈 グラフの読み方</h5>
+                    <p>このグラフは、AIの予測結果（太字の数字）に対して、どの情報がどのように影響したかを示します。</p>
+                    <ul><li><b style="color: #ff0051;">プラスに働いた情報（赤色）</b>：予測値を押し上げる方向に影響しました。</li>
+                        <li><b style="color: #008bfb;">マイナスに働いた情報（青色）</b>：予測値を押し下げる方向に影響しました。</li>
+                    </ul><p class="mb-0"><code>base value</code>は、何も情報がないときの平均的な予測値です。</p>
+                </div>
+                <div class="shap-plot-container">{{ shap_plot_html|safe }}</div>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // --- ローディング画面の処理 ---
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const triggers = document.querySelectorAll('.loading-trigger');
+    triggers.forEach(trigger => {
+        trigger.addEventListener('click', function() {
+            const form = this.closest('form');
+            if (form && typeof form.checkValidity === 'function' && form.checkValidity()) {
+                loadingOverlay.style.display = 'flex';
+            }
+        });
+    });
+
+    // --- UI連動の処理 ---
+    const targetColumnSelect = document.getElementById('target-column');
+    const featureColumnsContainer = document.getElementById('feature-columns-container');
+    
+    if (targetColumnSelect && featureColumnsContainer) {
+        let previousTarget = targetColumnSelect.value;
+
+        function updateFeatureSelection() {
+            const currentTarget = targetColumnSelect.value;
+            
+            const prevTargetCheckbox = featureColumnsContainer.querySelector(`input[value="${previousTarget}"]`);
+            if (prevTargetCheckbox) {
+                prevTargetCheckbox.disabled = false;
+                prevTargetCheckbox.closest('.form-check').style.display = '';
+            }
+
+            const currentTargetCheckbox = featureColumnsContainer.querySelector(`input[value="${currentTarget}"]`);
+            if (currentTargetCheckbox) {
+                currentTargetCheckbox.disabled = true;
+                currentTargetCheckbox.checked = false; 
+                currentTargetCheckbox.closest('.form-check').style.display = 'none';
+            }
+            
+            previousTarget = currentTarget;
+        }
+
+        updateFeatureSelection();
+        targetColumnSelect.addEventListener('change', updateFeatureSelection);
+    }
+});
+</script>
+{% endblock %}
