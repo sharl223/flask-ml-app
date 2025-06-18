@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}線形回帰 Playground{% endblock %}
+{% block content %}
+<div id="loading-overlay"><div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="mt-3">学習中です。しばらくお待ちください...</p></div>
+<div class="row">
+    <aside class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <h2><i class="bi bi-tools"></i> 線形回帰 設定</h2>
+            <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">使用データ</h5><p>ファイル: <strong>{{ filename or 'LightGBM Playgroundでデータをアップロードしてください' }}</strong></p><p class="small text-muted"><i class="bi bi-info-circle"></i> このページでは、LightGBM Playgroundでアップロードした最新のデータを使って学習します。</p></div></div>
+            {% if filename %}
+            <form id="main-form" action="/linear_regression" method="post">
+                <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">1. 目的変数（回帰タスク）</h5><p class="small text-muted">住宅価格など、数値を予測する列を選択してください。</p><select name="target_column" id="target-column" class="form-select">{% set current_target = form_values.get('target_column', [columns[0]])[0] %}{% for column in columns %}<option value="{{ column }}" {% if column == current_target %}selected{% endif %}>{{ column }}</option>{% endfor %}</select></div></div>
+                <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">2. 説明変数の選択</h5><div id="feature-columns-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">{% set selected_features = form_values.get('feature_columns', columns) %}{% for column in columns %}<div class="form-check"><input class="form-check-input" type="checkbox" id="feat_{{ column }}" name="feature_columns" value="{{ column }}" {% if column in selected_features %}checked{% endif %}><label class="form-check-label" for="feat_{{ column }}">{{ column }}</label></div>{% endfor %}</div></div></div>
+                <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">3. 学習の実行</h5><button type="submit" name="action" value="start_learning" class="btn btn-primary w-100 btn-lg loading-trigger">✨ 学習スタート</button></div></div>
+            </form>
+            {% endif %}
+        </div>
+    </aside>
+    <section class="col-lg-8">
+        <h1><i class="bi bi-graph-up"></i> 線形回帰 Playground</h1><p>目的変数に対して、各説明変数がどの程度影響を与えているかを分析します。</p>
+        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
+        <hr>
+        {% if not filename %}<div class="alert alert-warning" role="alert"><h4 class="alert-heading">データがありません</h4><p>まず、LightGBM Playgroundページで学習用のデータをアップロードしてください。</p><hr><a href="/playground" class="btn btn-primary">Playgroundページへ移動</a></div>{% endif %}
+        {% if simple_results %}<div class="row"><div class="col-md-6 mb-3"><div class="card text-center shadow-sm h-100"><div class="card-header">📝 モデルの成績表</div><div class="card-body"><h5 class="card-title">{{ simple_results.score_metric_name }}</h5><p class="display-4">{{ "%.4f"|format(simple_results.score) }}</p></div></div></div><div class="col-md-6 mb-3"><div class="card shadow-sm h-100"><div class="card-header">🔑 予測への影響度（係数）</div><div class="card-body table-responsive">{{ simple_results.coeffs_html|safe }}</div></div></div></div>{% endif %}
+    </section>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const triggers = document.querySelectorAll('.loading-trigger');
+    triggers.forEach(trigger => {
+        trigger.addEventListener('click', function(event) {
+            const form = this.closest('form');
+            if (form && typeof form.checkValidity === 'function' && form.checkValidity()) {
+                loadingOverlay.style.display = 'flex';
+            }
+        });
+    });
+    window.addEventListener('pageshow', function(event) {
+        if (loadingOverlay.style.display === 'flex') {
+            loadingOverlay.style.display = 'none';
+        }
+    });
+    const targetColumnSelect = document.getElementById('target-column');
+    const featureColumnsContainer = document.getElementById('feature-columns-container');
+    if (targetColumnSelect && featureColumnsContainer) {
+        let previousTarget = targetColumnSelect.value;
+        function updateFeatureSelection() {
+            const currentTarget = targetColumnSelect.value;
+            const prevTargetCheckbox = featureColumnsContainer.querySelector(`input[value="${previousTarget}"]`);
+            if (prevTargetCheckbox) {
+                prevTargetCheckbox.disabled = false;
+                prevTargetCheckbox.closest('.form-check').style.display = '';
+            }
+            const currentTargetCheckbox = featureColumnsContainer.querySelector(`input[value="${currentTarget}"]`);
+            if (currentTargetCheckbox) {
+                currentTargetCheckbox.disabled = true;
+                currentTargetCheckbox.checked = false; 
+                currentTargetCheckbox.closest('.form-check').style.display = 'none';
+            }
+            previousTarget = currentTarget;
+        }
+        updateFeatureSelection();
+        targetColumnSelect.addEventListener('change', updateFeatureSelection);
+    }
+});
+</script>
+{% endblock %}

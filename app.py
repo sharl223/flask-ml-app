@@ -5,6 +5,8 @@ from flask_session import Session
 # Blueprintのインポート
 from apps.home import home_bp
 from apps.lgbm_playground import lgbm_bp
+from apps.linear_regression import linear_regression_bp
+from apps.logistic_regression import logistic_regression_bp
 
 # Flaskアプリケーションの生成
 app = Flask(__name__)
@@ -43,6 +45,8 @@ app.config['MODELS_FOLDER'] = MODELS_FOLDER
 # --- Blueprintの登録 ---
 app.register_blueprint(home_bp)
 app.register_blueprint(lgbm_bp)
+app.register_blueprint(linear_regression_bp)
+app.register_blueprint(logistic_regression_bp)
 
 # --- 直接実行された場合の設定 ---
 if __name__ == '__main__':
