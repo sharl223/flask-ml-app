@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+
+{# 変数の初期化 #}
+{% set columns = columns|default([]) %}
+{% set dtypes = dtypes|default({}) %}
+{% set missing_info = missing_info|default({}) %}
+{% set missing_percentage = missing_percentage|default({}) %}
+{% set numeric_columns = numeric_columns|default([]) %}
+{% set categorical_columns = categorical_columns|default([]) %}
+{% set basic_stats = basic_stats|default({}) %}
+{% set filename = filename|default(None) %}
+{% set df_shape = df_shape|default(None) %}
+{% set df_preview_html = df_preview_html|default(None) %}
+{% set processed_filename = processed_filename|default(None) %}
+{% set processed_preview_html = processed_preview_html|default(None) %}
+
+{% block title %}CSV加工集計 / CSV Processing & Aggregation{% endblock %}
+
+{% block meta_description %}CSVファイルの前処理、集計、分析を簡単に行えるWebツール。データクリーニング、欠損値処理、基本統計、重複チェック、外れ値検出など。Easy CSV preprocessing, aggregation, and analysis web tool. Data cleaning, missing value handling, basic statistics, duplicate checking, outlier detection, and more.{% endblock %}
+
+{% block meta_keywords %}CSV加工, CSV集計, データ前処理, 欠損値処理, 基本統計, 重複チェック, 外れ値検出, データクリーニング, CSV processing, CSV aggregation, data preprocessing, missing value handling, basic statistics, duplicate checking, outlier detection, data cleaning{% endblock %}
+
+{% block og_title %}CSV加工集計 - データ前処理・分析ツール{% endblock %}
+
+{% block og_description %}CSVファイルの前処理、集計、分析を簡単に行えるWebツール。データクリーニング、欠損値処理、基本統計、重複チェック、外れ値検出など。{% endblock %}
+
+{% block twitter_title %}CSV加工集計 - データ前処理・分析ツール{% endblock %}
+
+{% block twitter_description %}CSVファイルの前処理、集計、分析を簡単に行えるWebツール。データクリーニング、欠損値処理、基本統計、重複チェック、外れ値検出など。{% endblock %}
+
+{% block breadcrumb_name %}CSV加工集計 / CSV Processing{% endblock %}
+
+{% block content %}
+<div id="loading-overlay">
+    <div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+    <p class="mt-3">処理中です。しばらくお待ちください... / Processing in progress. Please wait...</p>
+</div>
+
+<!-- ページ冒頭のガイド -->
+<div class="alert alert-info mb-4">
+    <h5><i class="bi bi-info-circle"></i> このページでできること / What you can do here</h5>
+    <p class="mb-2">
+        <strong>CSVファイルの前処理、集計、分析を行えます。</strong><br>
+        You can preprocess, aggregate, and analyze CSV files.
+    </p>
+    <p class="mb-2">
+        <strong>例：</strong> データのクリーニング、集計計算、欠損値処理、インデックス設定など<br>
+        <span style="color: #555;">Examples: Data cleaning, aggregation calculations, missing value handling, index setting, etc.</span>
+    </p>
+    <p class="mb-0">
+        <strong>手順：</strong> ファイルアップロード → インデックス設定 → 処理内容選択 → 実行 → 結果ダウンロード<br>
+        <span style="color: #555;">Steps: Upload file → Set index → Select processing → Execute → Download results</span>
+    </p>
+</div>
+
+<div class="row">
+    <aside class="col-lg-4">
+        <div class="sticky-top" style="top: 20px;">
+            <h2><i class="bi bi-tools"></i> CSV加工設定 / CSV Processing Settings</h2>
+            
+            <!-- ファイルアップロード -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">1. ファイルアップロード / File Upload</h5>
+                    <p class="small text-muted mb-3">
+                        <i class="bi bi-info-circle-fill"></i> 
+                        加工したいCSVファイルをアップロードしてください。<br>
+                        Upload the CSV file you want to process.
+                    </p>
+                    <form action="/csv_processor" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload">
+                        <p>ファイル / File: <strong>{{ filename or '未選択 / Not selected' }}</strong></p>
+                        <input type="file" name="file" class="form-control" required>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 loading-trigger">
+                                <i class="bi bi-upload"></i> アップロード / Upload
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            {% if filename %}
+            <form id="main-form" action="/csv_processor" method="post">
+                
+                <!-- インデックス設定 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">2. インデックス設定 / Index Settings</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            データの行番号を管理する方法を選択してください。<br>
+                            Select how to manage row numbers in your data.
+                        </p>
+                        <div class="mb-3">
+                            <label class="form-label">インデックス処理 / Index processing:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="add_index" id="add_index_no" value="no" checked>
+                                <label class="form-check-label" for="add_index_no">
+                                    インデックスを付加しない / No index
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="add_index" id="add_index_yes" value="yes">
+                                <label class="form-check-label" for="add_index_yes">
+                                    連番インデックスを付加 / Add sequential index
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="add_index" id="add_index_remove" value="remove">
+                                <label class="form-check-label" for="add_index_remove">
+                                    1列目を削除 / Remove first column
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 欠損値処理 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">3. 欠損値処理 / Missing Value Handling</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            欠損値の処理方法を選択してください。<br>
+                            Select how to handle missing values.
+                        </p>
+                        <div id="missing-values-container">
+                            <!-- 動的に生成される欠損値処理オプション -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- データ型変換 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">4. データ型変換 / Data Type Conversion</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            データ型の変換方法を選択してください。<br>
+                            Select how to convert data types.
+                        </p>
+                        <div id="type-conversions-container">
+                            <!-- 動的に生成されるデータ型変換オプション -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- フィルタリング -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">5. フィルタリング / Filtering</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            データのフィルタリング条件を設定してください。<br>
+                            Set filtering conditions for the data.
+                        </p>
+                        <div class="mb-3">
+                            <label for="filter_condition" class="form-label">フィルタリング条件 / Filter condition:</label>
+                            <input type="text" name="filter_condition" id="filter_condition" class="form-control" placeholder="例: column > 0">
+                            <small class="form-text text-muted">pandasのquery形式で条件を入力 / Enter conditions in pandas query format</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 重複行削除 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">6. 重複行削除 / Duplicate Row Removal</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            重複している行を削除するかどうかを選択してください。<br>
+                            Select whether to remove duplicate rows.
+                        </p>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="remove_duplicates" id="remove_duplicates">
+                            <label class="form-check-label" for="remove_duplicates">
+                                重複行を削除 / Remove duplicate rows
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ソート -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">7. ソート / Sorting</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            データのソート方法を設定してください。<br>
+                            Set how to sort the data.
+                        </p>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="sort_column" class="form-label">ソート列 / Sort column:</label>
+                                <select name="sort_column" id="sort_column" class="form-select">
+                                    <option value="">選択してください / Please select</option>
+                                    {% for column in columns %}
+                                    <option value="{{ column }}">{{ column }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">ソート順 / Sort order:</label>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sort_ascending" id="sort_asc" value="asc" checked>
+                                    <label class="form-check-label" for="sort_asc">昇順 / Ascending</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sort_ascending" id="sort_desc" value="desc">
+                                    <label class="form-check-label" for="sort_desc">降順 / Descending</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 集計処理 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">8. 集計処理 / Aggregation</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            データの集計処理を設定してください。<br>
+                            Set up data aggregation processing.
+                        </p>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="enable_summary" id="enable_summary" value="1">
+                            <label class="form-check-label" for="enable_summary">
+                                集計処理を有効にする / Enable aggregation
+                            </label>
+                        </div>
+                        <div id="summary-settings" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="group_columns" class="form-label">グループ化列 / Group column:</label>
+                                    <select name="group_columns" id="group_columns" class="form-select">
+                                        <option value="">選択してください / Please select</option>
+                                        {% for column in columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="agg_columns" class="form-label">集計列 / Aggregate column:</label>
+                                    <select name="agg_columns" id="agg_columns" class="form-select">
+                                        <option value="">選択してください / Please select</option>
+                                        {% for column in numeric_columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="agg_functions" class="form-label">集計関数 / Aggregate function:</label>
+                                    <select name="agg_functions" id="agg_functions" class="form-select">
+                                        <option value="mean">平均 / Mean</option>
+                                        <option value="sum">合計 / Sum</option>
+                                        <option value="count">件数 / Count</option>
+                                        <option value="min">最小値 / Min</option>
+                                        <option value="max">最大値 / Max</option>
+                                        <option value="std">標準偏差 / Std</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ピボットテーブル -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">9. ピボットテーブル / Pivot Table</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            ピボットテーブルの設定を行ってください。<br>
+                            Set up pivot table configuration.
+                        </p>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" name="enable_pivot" id="enable_pivot" value="1">
+                            <label class="form-check-label" for="enable_pivot">
+                                ピボットテーブルを作成 / Create pivot table
+                            </label>
+                        </div>
+                        <div id="pivot-settings" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <label for="pivot_index" class="form-label">インデックス / Index:</label>
+                                    <select name="pivot_index" id="pivot_index" class="form-select">
+                                        <option value="">選択してください / Please select</option>
+                                        {% for column in columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="pivot_columns" class="form-label">列 / Columns:</label>
+                                    <select name="pivot_columns" id="pivot_columns" class="form-select">
+                                        <option value="">選択してください / Please select</option>
+                                        {% for column in columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="pivot_values" class="form-label">値 / Values:</label>
+                                    <select name="pivot_values" id="pivot_values" class="form-select">
+                                        <option value="">選択してください / Please select</option>
+                                        {% for column in numeric_columns %}
+                                        <option value="{{ column }}">{{ column }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="pivot_aggfunc" class="form-label">集計関数 / Agg function:</label>
+                                    <select name="pivot_aggfunc" id="pivot_aggfunc" class="form-select">
+                                        <option value="mean">平均 / Mean</option>
+                                        <option value="sum">合計 / Sum</option>
+                                        <option value="count">件数 / Count</option>
+                                        <option value="min">最小値 / Min</option>
+                                        <option value="max">最大値 / Max</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 処理実行 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">10. 処理実行 / Execute Processing</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            選択した設定でCSVファイルを処理します。<br>
+                            Process the CSV file with the selected settings.
+                        </p>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="process_data" class="btn btn-primary flex-grow-1 btn-lg loading-trigger">
+                                <i class="bi bi-play-circle"></i> ✨ 処理実行 / Execute Processing
+                            </button>
+                            <button type="submit" name="action" value="reset" class="btn btn-outline-secondary" onclick="return confirm('すべてのデータをリセットしますか？ / Reset all data?')">
+                                <i class="bi bi-arrow-clockwise"></i> リセット / Reset
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            {% endif %}
+        </div>
+    </aside>
+
+    <section class="col-lg-8">
+        <h1><i class="bi bi-table"></i> CSV加工集計 / CSV Processing & Aggregation</h1>
+        <p class="lead">
+            CSVファイルの前処理、集計、分析を行い、機械学習に適したデータ形式に変換します。<br>
+            Preprocess, aggregate, and analyze CSV files to convert them into a format suitable for machine learning.
+        </p>
+
+        <div id="flash-messages-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+        <hr>
+
+        <!-- データプレビュー -->
+        {% if filename %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-table"></i> データのプレビュー / Data Preview</span>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="reset">
+                    <button type="submit" class="btn btn-outline-secondary btn-sm" onclick="return confirm('すべてのデータをリセットしますか？ / Reset all data?')">
+                        <i class="bi bi-arrow-clockwise"></i> リセット / Reset
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <p>ファイル名 / File: <strong>{{ filename }}</strong> | サイズ / Size: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列 / {{ df_shape[0] }} rows × {{ df_shape[1] }} columns</strong></p>
+                <div class="table-responsive">{{ df_preview_html|safe }}</div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 処理結果 -->
+        {% if processed_filename %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <i class="bi bi-clipboard-data"></i> 処理結果 / Processing Results
+            </div>
+            <div class="card-body">
+                <p>処理が完了しました。処理済みファイルをダウンロードできます。<br>
+                Processing is complete. You can download the processed file.</p>
+                <p><strong>処理済みファイル / Processed file:</strong> {{ processed_filename }}</p>
+                <p><strong>データサイズ / Data size:</strong> {{ processed_shape[0] }}行 × {{ processed_shape[1] }}列 / {{ processed_shape[0] }} rows × {{ processed_shape[1] }} columns</p>
+                
+                {% if processed_preview_html %}
+                <h6>処理後のデータプレビュー / Processed Data Preview</h6>
+                <div class="table-responsive">{{ processed_preview_html|safe }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ダウンロードセクション -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <i class="bi bi-download"></i> 処理済みファイルのダウンロード / Download Processed File
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="download">
+                    <input type="hidden" name="filename" value="{{ processed_filename }}">
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="bi bi-download"></i> 処理済みファイルをダウンロード / Download Processed File
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingOverlay = document.getElementById('loading-overlay');
+    const triggers = document.querySelectorAll('.loading-trigger');
+    
+    // ローディング画面の処理
+    triggers.forEach(trigger => {
+        trigger.addEventListener('click', function(event) {
+            const form = this.closest('form');
+            if (form && typeof form.checkValidity === 'function' && form.checkValidity()) {
+                loadingOverlay.style.display = 'flex';
+            }
+        });
+    });
+    
+    window.addEventListener('pageshow', function(event) {
+        if (loadingOverlay.style.display === 'flex') {
+            loadingOverlay.style.display = 'none';
+        }
+    });
+
+    // ページ読み込み時の初期化
+    generateMissingValueOptions();
+    generateTypeConversionOptions();
+
+    // 欠損値処理オプションの動的生成
+    function generateMissingValueOptions() {
+        const container = document.getElementById('missing-values-container');
+        if (!container) {
+            console.log('missing-values-container not found');
+            return;
+        }
+        
+        try {
+            // 初期化されたテンプレート変数を使用
+            const columns = {{ columns|tojson|safe }};
+            const missingInfo = {{ missing_info|tojson|safe }};
+            
+            console.log('Generating missing value options:', { columns, missingInfo });
+            
+            container.innerHTML = '';
+            
+            columns.forEach((column, index) => {
+                const missingCount = missingInfo[column] || 0;
+                if (missingCount > 0) {
+                    const div = document.createElement('div');
+                    div.className = 'mb-3';
+                    div.innerHTML = `
+                        <label class="form-label">${column} (欠損値: ${missingCount}件 / Missing: ${missingCount})</label>
+                        <select name="missing_strategies" class="form-select">
+                            <option value="">処理しない / No processing</option>
+                            <option value="drop">行を削除 / Drop rows</option>
+                            <option value="zero">0で埋める / Fill with 0</option>
+                            <option value="mean">平均値で埋める / Fill with mean</option>
+                            <option value="median">中央値で埋める / Fill with median</option>
+                            <option value="mode">最頻値で埋める / Fill with mode</option>
+                            <option value="forward">前の値で埋める / Forward fill</option>
+                            <option value="backward">次の値で埋める / Backward fill</option>
+                        </select>
+                        <input type="hidden" name="missing_columns" value="${column}">
+                    `;
+                    container.appendChild(div);
+                }
+            });
+        } catch (error) {
+            console.error('欠損値処理オプション生成エラー:', error);
+        }
+    }
+
+    // データ型変換オプションの動的生成
+    function generateTypeConversionOptions() {
+        const container = document.getElementById('type-conversions-container');
+        if (!container) {
+            console.log('type-conversions-container not found');
+            return;
+        }
+        
+        try {
+            // 初期化されたテンプレート変数を使用
+            const columns = {{ columns|tojson|safe }};
+            const dtypes = {{ dtypes|tojson|safe }};
+            
+            console.log('Generating type conversion options:', { columns, dtypes });
+            
+            container.innerHTML = '';
+            
+            columns.forEach((column, index) => {
+                const currentType = dtypes[column] || 'object';
+                const div = document.createElement('div');
+                div.className = 'mb-3';
+                div.innerHTML = `
+                    <label class="form-label">${column} (現在: ${currentType} / Current: ${currentType})</label>
+                    <select name="type_conversions" class="form-select">
+                        <option value="">変換しない / No conversion</option>
+                        <option value="int">整数 / Integer</option>
+                        <option value="float">小数 / Float</option>
+                        <option value="string">文字列 / String</option>
+                        <option value="datetime">日時 / Datetime</option>
+                    </select>
+                    <input type="hidden" name="type_columns" value="${column}">
+                `;
+                container.appendChild(div);
+            });
+        } catch (error) {
+            console.error('データ型変換オプション生成エラー:', error);
+        }
+    }
+
+    // 集計処理の表示制御
+    const enableSummaryCheckbox = document.getElementById('enable_summary');
+    const summarySettings = document.getElementById('summary-settings');
+    
+    if (enableSummaryCheckbox && summarySettings) {
+        enableSummaryCheckbox.addEventListener('change', function() {
+            summarySettings.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+
+    // ピボットテーブルの表示制御
+    const enablePivotCheckbox = document.getElementById('enable_pivot');
+    const pivotSettings = document.getElementById('pivot-settings');
+    
+    if (enablePivotCheckbox && pivotSettings) {
+        enablePivotCheckbox.addEventListener('change', function() {
+            pivotSettings.style.display = this.checked ? 'block' : 'none';
+        });
+    }
+});
+</script>
+{% endblock %} 

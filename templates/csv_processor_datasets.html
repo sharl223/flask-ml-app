@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}CSV加工集計用サンプルデータ / CSV Processing Sample Datasets{% endblock %}
+
+{% block meta_description %}CSV加工集計の練習に最適なサンプルデータセット。アイリス花分類、ワイン品質、乳がん診断、売上分析など、欠損値・重複行・異常値を含む実用的なデータ。Perfect sample datasets for CSV processing practice. Iris classification, wine quality, breast cancer diagnosis, sales analysis, and more with missing values, duplicates, and outliers.{% endblock %}
+
+{% block meta_keywords %}CSVサンプルデータ, データセット, アイリス, ワイン, 乳がん, 売上分析, 欠損値, 重複行, 異常値, データ前処理練習, CSV sample data, datasets, iris, wine, breast cancer, sales analysis, missing values, duplicates, outliers, data preprocessing practice{% endblock %}
+
+{% block og_title %}CSV加工集計用サンプルデータ - データ前処理練習{% endblock %}
+
+{% block og_description %}CSV加工集計の練習に最適なサンプルデータセット。アイリス花分類、ワイン品質、乳がん診断、売上分析など、欠損値・重複行・異常値を含む実用的なデータ。{% endblock %}
+
+{% block twitter_title %}CSV加工集計用サンプルデータ - データ前処理練習{% endblock %}
+
+{% block twitter_description %}CSV加工集計の練習に最適なサンプルデータセット。アイリス花分類、ワイン品質、乳がん診断、売上分析など、欠損値・重複行・異常値を含む実用的なデータ。{% endblock %}
+
+{% block breadcrumb_name %}CSVサンプルデータ / CSV Sample Datasets{% endblock %}
+
+{% block content %}
+<div class="csv-processor-datasets-page">
+    <!-- ヒーローセクション -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="hero-content" data-aos="fade-up">
+                <h1 class="hero-title">
+                    <i class="fas fa-table"></i>
+                    CSV加工集計用サンプルデータ
+                </h1>
+                <p class="hero-subtitle">
+                    データ加工・集計の練習に最適なサンプルデータセット
+                </p>
+                <div class="hero-features">
+                    <div class="feature-item">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <span>欠損値あり</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-copy"></i>
+                        <span>重複行あり</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line"></i>
+                        <span>異常値あり</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-cogs"></i>
+                        <span>加工練習用</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 使い方ガイド -->
+    <section class="usage-guide" data-aos="fade-up">
+        <div class="container">
+            <div class="modern-alert modern-alert-info">
+                <i class="bi bi-lightbulb-fill"></i>
+                <div>
+                    <strong>使い方：</strong>
+                    <ol class="mb-0 mt-2">
+                        <li>お好みのデータセットを<strong>ダウンロード</strong>します</li>
+                        <li><strong>CSV加工集計ページ</strong>でファイルをアップロードします</li>
+                        <li>欠損値処理、データ型変換、集計などの<strong>加工処理</strong>を練習します</li>
+                        <li>処理結果を<strong>ダウンロード</strong>して確認します</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- データセット一覧 -->
+    <section class="datasets-section">
+        <div class="container">
+            <div class="section-header" data-aos="fade-up">
+                <h2><i class="fas fa-database"></i> サンプルデータセット一覧</h2>
+                <p>様々な加工課題を含む実用的なデータセット</p>
+            </div>
+
+            <div class="datasets-grid">
+                <!-- アイリスデータセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="200">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-flower1"></i>
+                        </div>
+                        <h3>アイリス花の分類データ</h3>
+                        <span class="card-badge">分類問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            アイリス花の特徴から種類を分類するデータセット。<br>
+                            欠損値が含まれており、データクリーニングの練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">150</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">6</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">15</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">欠損値処理</span>
+                            <span class="feature-tag">分類問題</span>
+                            <span class="feature-tag">初心者向け</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_01.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- ワインデータセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="300">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-cup-hot"></i>
+                        </div>
+                        <h3>ワインの品質分類データ</h3>
+                        <span class="card-badge">分類問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            ワインの化学成分から品質を分類するデータセット。<br>
+                            重複行が含まれており、重複削除の練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">183</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">14</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">14</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">重複削除</span>
+                            <span class="feature-tag">欠損値処理</span>
+                            <span class="feature-tag">分類問題</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_02.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 乳がんデータセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="400">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-heart-pulse"></i>
+                        </div>
+                        <h3>乳がん診断データ</h3>
+                        <span class="card-badge">分類問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            乳がん細胞の特徴から良性・悪性を診断するデータセット。<br>
+                            医療分野でのデータ前処理の練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">569</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">32</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">20</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">欠損値処理</span>
+                            <span class="feature-tag">医療データ</span>
+                            <span class="feature-tag">分類問題</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_03.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 売上データセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="500">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h3>売上分析データ</h3>
+                        <span class="card-badge">回帰問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            商品売上の時系列データセット。<br>
+                            欠損値と異常値が含まれており、データクリーニングの総合練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">1,000</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">11</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">100</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">異常値検出</span>
+                            <span class="feature-tag">時系列データ</span>
+                            <span class="feature-tag">回帰問題</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_04.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 従業員データセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="600">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h3>従業員分析データ</h3>
+                        <span class="card-badge">混合問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            従業員の属性と業績データセット。<br>
+                            分類と回帰の両方の分析が可能で、集計分析の練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">500</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">15</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">65</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">集計分析</span>
+                            <span class="feature-tag">ピボットテーブル</span>
+                            <span class="feature-tag">人事データ</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_05.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 顧客データセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="700">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-person-check"></i>
+                        </div>
+                        <h3>顧客分析データ</h3>
+                        <span class="card-badge">分類問題</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            顧客の属性と購買行動データセット。<br>
+                            顧客離脱予測の分類問題として、マーケティング分析の練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">800</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">15</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">85</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">顧客分析</span>
+                            <span class="feature-tag">離脱予測</span>
+                            <span class="feature-tag">分類問題</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_06.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+
+                <!-- 天気データセット -->
+                <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="800">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="bi bi-cloud-sun"></i>
+                        </div>
+                        <h3>天気予測データ</h3>
+                        <span class="card-badge">時系列</span>
+                    </div>
+                    <div class="card-content">
+                        <p class="card-description">
+                            1年間の天気データセット。<br>
+                            季節性を持つ時系列データで、時系列分析の練習に最適です。
+                        </p>
+                        <div class="data-stats">
+                            <div class="stat">
+                                <span class="stat-number">365</span>
+                                <span class="stat-label">レコード</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">11</span>
+                                <span class="stat-label">特徴量</span>
+                            </div>
+                            <div class="stat">
+                                <span class="stat-number">70</span>
+                                <span class="stat-label">欠損値</span>
+                            </div>
+                        </div>
+                        <div class="data-features">
+                            <span class="feature-tag">時系列データ</span>
+                            <span class="feature-tag">季節性</span>
+                            <span class="feature-tag">予測問題</span>
+                        </div>
+                        <a href="/download/csv_processor_dataset_07.csv" class="btn-modern btn-modern-accent w-100">
+                            <i class="bi bi-download"></i>
+                            ダウンロード
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTAセクション -->
+    <section class="cta-section" data-aos="fade-up">
+        <div class="container">
+            <div class="cta-content text-center">
+                <h2 class="cta-title">さあ、データ加工を始めよう！</h2>
+                <p class="cta-subtitle">
+                    サンプルデータをダウンロードして、CSV加工集計ページで練習してみてください
+                </p>
+                <div class="cta-buttons">
+                    <a href="/csv_processor" class="btn-modern btn-modern-accent btn-lg">
+                        <i class="bi bi-table"></i>
+                        CSV加工集計ページへ
+                    </a>
+                    <a href="/" class="btn-modern btn-modern-secondary btn-lg">
+                        <i class="bi bi-house-door"></i>
+                        ホームに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %} 

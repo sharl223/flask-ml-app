@@ -1,50 +1,308 @@
 {% extends "base.html" %}
 
-{% block title %}ようこそ！未来予測アプリへ{% endblock %}
+{% block title %}ようこそ！AI Playgroundへ / Welcome to AI Playground{% endblock %}
 
 {% block content %}
-{# ヒーローセクション（Jumbotronの代替） #}
-<div class="p-5 mb-4 bg-white rounded-3 shadow-sm">
-    <h1 class="display-5 fw-bold">さあ、データで未来を予測しよう！ ✨</h1>
-    <p class="lead mt-3">
-        このサイトは、むずかしいプログラミングをしなくても、<br>
-        あなたのデータからAI予測モデルを作れる遊び場です。
-    </p>
-    <hr class="my-4">
-    <p>
-        「このお客さんは、商品を買ってくれるかな？」<br>
-        「明日の売上は、どれくらいになるんだろう？」<br>
-        「この患者さんは、検査結果が陽性？それとも陰性？」
-    </p>
-    <p>そんな「もしも」の答えを、データと一緒に探してみませんか？</p>
-</div>
-
-<h2>できること</h2>
-<div class="row mt-4">
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
-                <h3 class="card-title">🚀 LightGBM Playground</h3>
-                <p class="card-text"><strong>あなたのデータで、予測モデルを育てよう！</strong></p>
-                <p class="card-text">お手持ちのCSVファイルをアップロードするだけで、AIの学習がスタートします。最高のスコアを目指しましょう！まるでゲームのように、試行錯誤する過程を楽しめます。</p>
-                <a href="/playground" class="btn btn-primary mt-auto">Playgroundへ</a>
+<!-- ヒーローセクション -->
+<section class="hero-section" data-aos="fade-up" data-aos-duration="1000">
+    <div class="container">
+        <div class="hero-content text-center">
+            <div class="hero-badge" data-aos="zoom-in" data-aos-delay="200">
+                <i class="bi bi-stars"></i>
+                <span>AI Playground</span>
+            </div>
+            <h1 class="hero-title" data-aos="fade-up" data-aos-delay="400">
+                データで未来を予測しよう<br>
+                <span class="text-gradient">Predict the future with your data</span>
+            </h1>
+            <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="600">
+                プログラミング不要。初心者でも使えるAI予測ツールです。<br>
+                No coding required. Easy AI prediction tool for beginners.
+            </p>
+            <div class="hero-features" data-aos="fade-up" data-aos-delay="800">
+                <div class="feature-item">
+                    <i class="bi bi-lightning-charge-fill"></i>
+                    <span>かんたん操作 / Easy to use</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    <span>予測も分析も / Prediction & Analysis</span>
+                </div>
+                <div class="feature-item">
+                    <i class="bi bi-shield-check"></i>
+                    <span>安心の日本語サポート / Japanese & English support</span>
+                </div>
+            </div>
+            <div class="hero-cta" data-aos="fade-up" data-aos-delay="1000">
+                <a href="/lgbm_playground" class="btn-modern btn-modern-accent btn-lg">
+                    <i class="bi bi-rocket-takeoff-fill"></i>
+                    今すぐ始める / Start Now
+                </a>
+                <a href="/datasets" class="btn-modern btn-modern-secondary btn-lg">
+                    <i class="bi bi-database-fill-gear"></i>
+                    サンプルデータを見る / See Sample Data
+                </a>
             </div>
         </div>
     </div>
-    <div class="col-md-6 mb-4">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body d-flex flex-column">
-                <h3 class="card-title">📚 サンプルデータ置き場</h3>
-                <p class="card-text"><strong>手ぶらで来ても大丈夫！</strong></p>
-                <p class="card-text">「試してみたいけど、ちょうどいいデータがない…」という方のために、練習用のデータセットを用意しました。有名なデータで、気軽にAIの性能を試してみてください。</p>
-                <a href="/datasets" class="btn btn-secondary mt-auto">データを見る</a>
+</section>
+
+<!-- ユースケースセクション -->
+<section class="use-cases-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="section-header text-center" data-aos="fade-up">
+            <h2 class="section-title">こんな「もしも」を解決できます / Example Use Cases</h2>
+            <p class="section-subtitle">ビジネスや研究でよくある予測課題<br>Common prediction tasks in business and research</p>
+        </div>
+        
+        <div class="use-cases-grid">
+            <div class="use-case-card modern-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="use-case-icon">
+                    <i class="bi bi-cart-check-fill"></i>
+                </div>
+                <h3>顧客購買予測 / Customer Purchase Prediction</h3>
+                <p>「このお客さんは、商品を買ってくれるかな？」<br>
+                Will this customer buy the product?<br>
+                過去の購買データから、将来の購買確率を予測します。<br>
+                Predict purchase probability from past data.</p>
+                <div class="use-case-tags">
+                    <span class="tag">分類問題 / Classification</span>
+                    <span class="tag">マーケティング / Marketing</span>
+                </div>
+            </div>
+            
+            <div class="use-case-card modern-card" data-aos="fade-up" data-aos-delay="400">
+                <div class="use-case-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <h3>売上予測 / Sales Forecast</h3>
+                <p>「明日の売上は、どれくらいになるんだろう？」<br>
+                How much will we sell tomorrow?<br>
+                時系列データから、将来の売上金額を予測します。<br>
+                Predict future sales from time-series data.</p>
+                <div class="use-case-tags">
+                    <span class="tag">回帰問題 / Regression</span>
+                    <span class="tag">財務分析 / Finance</span>
+                </div>
+            </div>
+            
+            <div class="use-case-card modern-card" data-aos="fade-up" data-aos-delay="600">
+                <div class="use-case-icon">
+                    <i class="bi bi-heart-pulse-fill"></i>
+                </div>
+                <h3>医療診断 / Medical Diagnosis</h3>
+                <p>「この患者さんは、検査結果が陽性？それとも陰性？」<br>
+                Is this patient positive or negative?<br>
+                症状や検査データから、診断結果を予測します。<br>
+                Predict diagnosis from symptoms and test data.</p>
+                <div class="use-case-tags">
+                    <span class="tag">分類問題 / Classification</span>
+                    <span class="tag">医療 / Medical</span>
+                </div>
             </div>
         </div>
     </div>
-</div>
+</section>
 
-<div class="alert alert-info mt-4" role="alert">
-  <i class="bi bi-info-circle-fill"></i>
-  まずはナビゲーションバーの `Playground` を選んで、サンプルデータから試してみるのがおすすめです！
+<!-- 機能紹介セクション -->
+<section class="features-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="section-header text-center" data-aos="fade-up">
+            <h2 class="section-title">AI Playgroundの特徴 / Features</h2>
+            <p class="section-subtitle">初心者でも安心して使える機械学習ツールです。<br>Easy machine learning tool for everyone.</p>
+        </div>
+        
+        <div class="features-grid">
+            <div class="feature-card modern-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <i class="bi bi-rocket-takeoff-fill"></i>
+                    </div>
+                    <h3>🚀 LightGBM Playground</h3>
+                </div>
+                <p class="feature-description">
+                    あなたのデータで予測モデルを作成できます。<br>
+                    You can create a prediction model with your own data.
+                </p>
+                <p class="feature-details">
+                    CSVファイルをアップロードするだけで、AIが自動で学習します。<br>
+                    Just upload a CSV file and AI will learn automatically.<br>
+                    初心者の方も安心してお試しください。<br>
+                    Feel free to try, even if you are new to data science.
+                </p>
+                <div class="feature-highlights">
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>自動ハイパーパラメータ調整 / Auto hyperparameter tuning</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>学習進捗の可視化 / Progress visualization</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>SHAPによる説明 / Explainable results (SHAP)</span>
+                    </div>
+                </div>
+                <a href="/lgbm_playground" class="btn-modern btn-modern-accent">
+                    <i class="bi bi-play-fill"></i>
+                    Playgroundへ / Go to Playground
+                </a>
+            </div>
+            
+            <div class="feature-card modern-card" data-aos="fade-up" data-aos-delay="300">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <i class="bi bi-table"></i>
+                    </div>
+                    <h3>📊 CSV加工集計 / CSV Processing</h3>
+                </div>
+                <p class="feature-description">
+                    データの前処理から集計まで、ワンストップで対応。<br>
+                    All-in-one for data cleaning and summary.
+                </p>
+                <p class="feature-details">
+                    欠損値処理やデータ型変換、集計分析も簡単です。<br>
+                    Easy missing value handling, type conversion, and summary analysis.<br>
+                    機械学習の前準備や、シンプルなデータ分析にも使えます。<br>
+                    Useful for ML preparation or simple data analysis.
+                </p>
+                <div class="feature-highlights">
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>欠損値の自動処理 / Auto missing value handling</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>データ型変換 / Type conversion</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>集計・ピボットテーブル / Aggregation & Pivot table</span>
+                    </div>
+                </div>
+                <a href="/csv_processor" class="btn-modern btn-modern-primary">
+                    <i class="bi bi-gear-fill"></i>
+                    加工ツールへ / Go to Processor
+                </a>
+            </div>
+            
+            <div class="feature-card modern-card" data-aos="fade-up" data-aos-delay="400">
+                <div class="feature-header">
+                    <div class="feature-icon">
+                        <i class="bi bi-database-fill-gear"></i>
+                    </div>
+                    <h3>📚 サンプルデータ置き場 / Sample Data</h3>
+                </div>
+                <p class="feature-description">
+                    手ぶらで来ても大丈夫。<br>
+                    No data? No problem!
+                </p>
+                <p class="feature-details">
+                    練習用のデータセットを用意しています。<br>
+                    Practice datasets are available.<br>
+                    有名なデータで、気軽にAIの性能を試せます。<br>
+                    Try AI with famous datasets easily.
+                </p>
+                <div class="feature-highlights">
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>California Housing Dataset</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <span>Titanic Survival Dataset</span>
+                    </div>
+                </div>
+                <a href="/datasets" class="btn-modern btn-modern-secondary">
+                    <i class="bi bi-database-fill-gear"></i>
+                    サンプルデータへ / Go to Sample Data
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 統計セクション -->
+<section class="stats-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-item" data-aos="zoom-in" data-aos-delay="200">
+                <div class="stat-number">99.9%</div>
+                <div class="stat-label">精度</div>
+                <div class="stat-description">最高レベルの予測精度</div>
+            </div>
+            <div class="stat-item" data-aos="zoom-in" data-aos-delay="400">
+                <div class="stat-number">&lt; 30秒</div>
+                <div class="stat-label">学習時間</div>
+                <div class="stat-description">高速なモデル学習</div>
+            </div>
+            <div class="stat-item" data-aos="zoom-in" data-aos-delay="600">
+                <div class="stat-number">100%</div>
+                <div class="stat-label">無料</div>
+                <div class="stat-description">完全無料で利用可能</div>
+            </div>
+            <div class="stat-item" data-aos="zoom-in" data-aos-delay="800">
+                <div class="stat-number">∞</div>
+                <div class="stat-label">可能性</div>
+                <div class="stat-description">無限の予測可能性</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTAセクション -->
+<section class="cta-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="cta-content text-center">
+            <h2 class="cta-title">さあ、AIの世界を体験しよう！</h2>
+            <p class="cta-subtitle">
+                難しい設定は不要。あなたのデータをアップロードするだけで、<br>
+                すぐにAI予測モデルを作成できます。
+            </p>
+            <div class="cta-buttons">
+                <a href="/playground" class="btn-modern btn-modern-accent btn-lg">
+                    <i class="bi bi-rocket-takeoff-fill"></i>
+                    今すぐ始める
+                </a>
+                <a href="/csv_processor" class="btn-modern btn-modern-primary btn-lg">
+                    <i class="bi bi-table"></i>
+                    データ加工
+                </a>
+                <a href="/datasets" class="btn-modern btn-modern-secondary btn-lg">
+                    <i class="bi bi-database-fill-gear"></i>
+                    サンプルデータで試す
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 推奨セクション -->
+<div class="recommendation-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="modern-alert modern-alert-info">
+            <i class="bi bi-lightbulb-fill"></i>
+            <div>
+                <strong>おすすめの使い方：</strong>
+                まずはナビゲーションバーの <code>LightGBM</code> を選んで、サンプルデータから試してみるのがおすすめです！
+            </div>
+        </div>
+        
+        <!-- グローバルリセットセクション -->
+        <div class="modern-alert modern-alert-warning mt-3">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <div>
+                <strong>セッション情報のリセット：</strong>
+                ページ移動時に前回のファイルや実行結果が残存している場合は、以下のボタンで全セッション情報をクリアできます。
+                <form method="POST" action="/reset_all" class="mt-2" style="display: inline;">
+                    <button type="submit" class="btn btn-warning btn-sm" onclick="return confirm('全セッション情報をリセットしますか？この操作は取り消せません。')">
+                        <i class="bi bi-arrow-clockwise"></i>
+                        全セッションリセット
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

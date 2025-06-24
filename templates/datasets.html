@@ -1,39 +1,137 @@
 {% extends "base.html" %}
 
-{% block title %}サンプルデータ置き場{% endblock %}
+{% block title %}サンプルデータ置き場 - AI Playground{% endblock %}
 
 {% block content %}
-<div class="container">
-    <h1 class="mb-4">📚 サンプルデータ置き場</h1>
-    <div class="alert alert-primary" role="alert">
-        <p class="mb-0">💡 AIモデルの学習と性能テストを体験できるよう、2種類のデータセットを用意しました。</p>
-        <hr>
-        <ol class="mb-0">
-            <li><strong>学習用データ</strong>をダウンロードし、Playgroundでモデルを<strong>学習</strong>させます。</li>
-            <li><strong>予測用データ</strong>をダウンロードし、学習後のモデルで<strong>予測</strong>を実行します。</li>
-        </ol>
+<!-- ヒーローセクション -->
+<section class="datasets-hero" data-aos="fade-up" data-aos-duration="1000">
+    <div class="container">
+        <div class="hero-content text-center">
+            <div class="hero-badge" data-aos="zoom-in" data-aos-delay="200">
+                <i class="bi bi-database-fill-gear"></i>
+                <span>サンプルデータ</span>
+            </div>
+            <h1 class="hero-title" data-aos="fade-up" data-aos-delay="400">
+                すぐに使える
+                <span class="text-gradient">データセット</span>
+            </h1>
+            <p class="hero-subtitle" data-aos="fade-up" data-aos-delay="600">
+                AIモデルの学習と性能テストを体験できるよう、<br>
+                <strong>2種類の有名なデータセット</strong>を用意しました
+            </p>
+        </div>
     </div>
-    <hr class="my-4">
+</section>
 
-    <h2>🚢 タイタニック号の生存者を探せ！ (分類問題)</h2>
-    <p>乗客のプロフィールから生存者を予測する分類問題。</p>
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">1. 学習用データ</h5>
-                    <a href="/download/titanic_train.csv" class="btn btn-primary w-100 mb-3"><i class="bi bi-download"></i> titanic_train.csv をダウンロード</a>
+<!-- 使い方ガイド -->
+<section class="usage-guide" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="modern-alert modern-alert-info" data-aos="fade-up">
+            <i class="bi bi-lightbulb-fill"></i>
+            <div>
+                <strong>使い方：</strong>
+                <ol class="mb-0 mt-2">
+                    <li><strong>学習用データ</strong>をダウンロードし、Playgroundでモデルを<strong>学習</strong>させます</li>
+                    <li><strong>予測用データ</strong>をダウンロードし、学習後のモデルで<strong>予測</strong>を実行します</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- タイタニックデータセット -->
+<section class="dataset-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="dataset-header" data-aos="fade-up">
+            <div class="dataset-icon">
+                <i class="bi bi-ship"></i>
+            </div>
+            <div class="dataset-info">
+                <h2 class="dataset-title">🚢 タイタニック号の生存者を探せ！</h2>
+                <p class="dataset-description">乗客のプロフィールから生存者を予測する分類問題</p>
+                <div class="dataset-tags">
+                    <span class="tag tag-classification">分類問題</span>
+                    <span class="tag tag-popular">人気</span>
+                    <span class="tag tag-beginner">初心者向け</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dataset-cards">
+            <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h3>学習用データ</h3>
+                    <span class="card-badge">Training</span>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">
+                        モデルの学習に使用するデータセットです。<br>
+                        891件の乗客データと生存結果が含まれています。
+                    </p>
+                    <div class="data-stats">
+                        <div class="stat">
+                            <span class="stat-number">891</span>
+                            <span class="stat-label">レコード</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">12</span>
+                            <span class="stat-label">特徴量</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">2</span>
+                            <span class="stat-label">クラス</span>
+                        </div>
+                    </div>
+                    <a href="/download/titanic_train.csv" class="btn-modern btn-modern-accent w-100">
+                        <i class="bi bi-download"></i>
+                        titanic_train.csv をダウンロード
+                    </a>
+                </div>
+                <div class="card-preview">
+                    <h4>データプレビュー</h4>
                     <div class="table-responsive">
                         {{ titanic_train_html|safe if titanic_train_html else error }}
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">2. 予測用データ</h5>
-                    <a href="/download/titanic_predict.csv" class="btn btn-secondary w-100 mb-3"><i class="bi bi-download"></i> titanic_predict.csv をダウンロード</a>
+            
+            <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-eye-fill"></i>
+                    </div>
+                    <h3>予測用データ</h3>
+                    <span class="card-badge">Prediction</span>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">
+                        学習したモデルで予測を実行するデータセットです。<br>
+                        418件の乗客データが含まれています。
+                    </p>
+                    <div class="data-stats">
+                        <div class="stat">
+                            <span class="stat-number">418</span>
+                            <span class="stat-label">レコード</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">11</span>
+                            <span class="stat-label">特徴量</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">?</span>
+                            <span class="stat-label">予測対象</span>
+                        </div>
+                    </div>
+                    <a href="/download/titanic_predict.csv" class="btn-modern btn-modern-secondary w-100">
+                        <i class="bi bi-download"></i>
+                        titanic_predict.csv をダウンロード
+                    </a>
+                </div>
+                <div class="card-preview">
+                    <h4>データプレビュー</h4>
                     <div class="table-responsive">
                         {{ titanic_predict_html|safe if titanic_predict_html else '' }}
                     </div>
@@ -41,28 +139,101 @@
             </div>
         </div>
     </div>
+</section>
 
-    <hr class="my-4">
-
-    <h2>🏡 カリフォルニアの住宅価格を当てろ！ (回帰問題)</h2>
-    <p>地域の情報から住宅価格を予測する回帰問題。</p>
-    <div class="row">
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">1. 学習用データ</h5>
-                    <a href="/download/california_train.csv" class="btn btn-primary w-100 mb-3"><i class="bi bi-download"></i> california_train.csv をダウンロード</a>
+<!-- カリフォルニアデータセット -->
+<section class="dataset-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="dataset-header" data-aos="fade-up">
+            <div class="dataset-icon">
+                <i class="bi bi-house-heart-fill"></i>
+            </div>
+            <div class="dataset-info">
+                <h2 class="dataset-title">🏡 カリフォルニアの住宅価格を当てろ！</h2>
+                <p class="dataset-description">地域の情報から住宅価格を予測する回帰問題</p>
+                <div class="dataset-tags">
+                    <span class="tag tag-regression">回帰問題</span>
+                    <span class="tag tag-advanced">上級者向け</span>
+                    <span class="tag tag-real">実データ</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="dataset-cards">
+            <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="200">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <h3>学習用データ</h3>
+                    <span class="card-badge">Training</span>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">
+                        モデルの学習に使用するデータセットです。<br>
+                        16,640件の住宅データと価格が含まれています。
+                    </p>
+                    <div class="data-stats">
+                        <div class="stat">
+                            <span class="stat-number">16,640</span>
+                            <span class="stat-label">レコード</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">8</span>
+                            <span class="stat-label">特徴量</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">連続値</span>
+                            <span class="stat-label">ターゲット</span>
+                        </div>
+                    </div>
+                    <a href="/download/california_train.csv" class="btn-modern btn-modern-accent w-100">
+                        <i class="bi bi-download"></i>
+                        california_train.csv をダウンロード
+                    </a>
+                </div>
+                <div class="card-preview">
+                    <h4>データプレビュー</h4>
                     <div class="table-responsive">
                         {{ california_train_html|safe if california_train_html else error }}
                     </div>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title">2. 予測用データ</h5>
-                    <a href="/download/california_predict.csv" class="btn btn-secondary w-100 mb-3"><i class="bi bi-download"></i> california_predict.csv をダウンロード</a>
+            
+            <div class="dataset-card modern-card" data-aos="fade-up" data-aos-delay="400">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-eye-fill"></i>
+                    </div>
+                    <h3>予測用データ</h3>
+                    <span class="card-badge">Prediction</span>
+                </div>
+                <div class="card-content">
+                    <p class="card-description">
+                        学習したモデルで予測を実行するデータセットです。<br>
+                        5,460件の住宅データが含まれています。
+                    </p>
+                    <div class="data-stats">
+                        <div class="stat">
+                            <span class="stat-number">5,460</span>
+                            <span class="stat-label">レコード</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">8</span>
+                            <span class="stat-label">特徴量</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-number">?</span>
+                            <span class="stat-label">予測対象</span>
+                        </div>
+                    </div>
+                    <a href="/download/california_predict.csv" class="btn-modern btn-modern-secondary w-100">
+                        <i class="bi bi-download"></i>
+                        california_predict.csv をダウンロード
+                    </a>
+                </div>
+                <div class="card-preview">
+                    <h4>データプレビュー</h4>
                     <div class="table-responsive">
                         {{ california_predict_html|safe if california_predict_html else '' }}
                     </div>
@@ -70,5 +241,81 @@
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<!-- CSV加工集計用サンプルデータセクション -->
+<section class="csv-processor-section" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="section-header text-center" data-aos="fade-up">
+            <div class="section-icon">
+                <i class="bi bi-table"></i>
+            </div>
+            <h2 class="section-title">📊 CSV加工集計用サンプルデータ</h2>
+            <p class="section-subtitle">
+                データ加工・集計の練習に最適なサンプルデータセット
+            </p>
+        </div>
+        
+        <div class="csv-processor-card modern-card" data-aos="fade-up" data-aos-delay="200">
+            <div class="card-content">
+                <div class="card-description">
+                    <p>
+                        <strong>欠損値処理</strong>、<strong>データ型変換</strong>、<strong>集計処理</strong>などの<br>
+                        CSVデータ加工技術を練習できる専用サンプルデータセットを用意しました。
+                    </p>
+                    <div class="feature-list">
+                        <div class="feature-item">
+                            <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                            <span>欠損値ありのデータ</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-copy text-info"></i>
+                            <span>重複行ありのデータ</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-graph-up text-danger"></i>
+                            <span>異常値ありのデータ</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="bi bi-gear-fill text-success"></i>
+                            <span>加工練習用データ</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <a href="/csv_processor_datasets" class="btn-modern btn-modern-accent btn-lg">
+                        <i class="bi bi-table"></i>
+                        CSV加工集計用サンプルデータを見る
+                    </a>
+                    <a href="/csv_processor" class="btn-modern btn-modern-secondary btn-lg">
+                        <i class="bi bi-gear"></i>
+                        CSV加工集計ページへ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- CTAセクション -->
+<section class="datasets-cta" data-aos="fade-up" data-aos-duration="800">
+    <div class="container">
+        <div class="cta-content text-center">
+            <h2 class="cta-title">データをダウンロードしたら、次は学習を始めよう！</h2>
+            <p class="cta-subtitle">
+                ダウンロードしたデータを使って、AIモデルの学習を体験してみてください
+            </p>
+            <div class="cta-buttons">
+                <a href="/playground" class="btn-modern btn-modern-accent btn-lg">
+                    <i class="bi bi-rocket-takeoff-fill"></i>
+                    LightGBM Playgroundへ
+                </a>
+                <a href="/linear_regression" class="btn-modern btn-modern-secondary btn-lg">
+                    <i class="bi bi-graph-up-arrow"></i>
+                    線形回帰で試す
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
 {% endblock %}

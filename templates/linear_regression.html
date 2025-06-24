@@ -1,29 +1,103 @@
 {% extends "base.html" %}
-{% block title %}線形回帰 Playground{% endblock %}
+{% block title %}線形回帰 Playground / Linear Regression Playground{% endblock %}
 {% block content %}
-<div id="loading-overlay"><div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="mt-3">学習中です。しばらくお待ちください...</p></div>
+<div id="loading-overlay"><div class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="mt-3">学習中です。しばらくお待ちください... / Training in progress. Please wait...</p></div>
+
+<!-- ページ冒頭のガイド -->
+<div class="alert alert-info mb-4">
+    <h5><i class="bi bi-info-circle"></i> このページでできること / What you can do here</h5>
+    <p class="mb-2">
+        <strong>数値を予測するAIモデルを作成できます。</strong><br>
+        You can create an AI model to predict numerical values (regression).
+    </p>
+    <p class="mb-2">
+        <strong>例：</strong> 住宅価格、売上金額、気温など、連続的な数値を予測<br>
+        <span style="color: #555;">Examples: Predict house prices, sales amounts, temperature, etc.</span>
+    </p>
+    <p class="mb-0">
+        <strong>手順：</strong> データアップロード → 目的変数選択 → 特徴量選択 → 学習 → 予測 → 結果解釈<br>
+        <span style="color: #555;">Steps: Upload data → Select target → Select features → Train → Predict → Interpret results</span>
+    </p>
+</div>
+
 <div class="row">
     <aside class="col-lg-4">
         <div class="sticky-top" style="top: 20px;">
-            <h2><i class="bi bi-tools"></i> 線形回帰 設定</h2>
-            <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">1. 学習用データ</h5><form action="/linear_regression" method="post" enctype="multipart/form-data"><input type="hidden" name="action" value="upload"><p>ファイル: <strong>{{ filename or '未選択' }}</strong></p><input type="file" name="file" class="form-control" required><button type="submit" class="btn btn-primary w-100 mt-2 loading-trigger">アップロードして分析開始</button></form></div></div>
+            <h2><i class="bi bi-tools"></i> 線形回帰 設定 / Linear Regression Settings</h2>
+            
+            <!-- ステップ1: データアップロード -->
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">1. 学習用データ / Training Data</h5>
+                    <p class="small text-muted mb-3">
+                        <i class="bi bi-info-circle-fill"></i> 
+                        予測したい「答え」の列を含むCSVファイルをアップロードしてください。<br>
+                        Upload a CSV file that contains the column you want to predict.
+                    </p>
+                    <form action="/linear_regression" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="action" value="upload">
+                        <p>ファイル / File: <strong>{{ filename or '未選択 / Not selected' }}</strong></p>
+                        <input type="file" name="file" class="form-control" required>
+                        <div class="d-flex gap-2 mt-2">
+                            <button type="submit" class="btn btn-primary flex-grow-1 loading-trigger">
+                                <i class="bi bi-upload"></i> アップロードして分析開始 / Upload & Start Analysis
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             {% if filename %}
             <form id="main-form" action="/linear_regression" method="post">
-                <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">2. 目的変数（回帰タスク）</h5><p class="small text-muted">住宅価格など、数値を予測する列を選択してください。</p><select name="target_column" id="target-column" class="form-select">{% set current_target = form_values.get('target_column', [columns[0]])[0] %}{% for column in columns %}<option value="{{ column }}" {% if column == current_target %}selected{% endif %}>{{ column }}</option>{% endfor %}</select></div></div>
+                
+                <!-- ステップ2: 目的変数選択 -->
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
-                        <h5 class="card-title">3. 説明変数の選択</h5>
-                        <p class="small text-muted"><i class="bi bi-info-circle-fill"></i> 文字列の列は、自動でOne-Hot Encodingにより前処理されます。</p>
+                        <h5 class="card-title">2. 目的変数（予測したい値）/ Target Variable</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            予測したい数値の列を選択してください。<br>
+                            Select the column containing the numerical value you want to predict.
+                        </p>
+                        <select name="target_column" id="target-column" class="form-select">
+                            {% set current_target = form_values.get('target_column', [columns[0] if columns else ''])[0] if form_values.get('target_column') else (columns[0] if columns else '') %}
+                            {% for column in columns %}
+                            <option value="{{ column }}" {% if column == current_target %}selected{% endif %}>{{ column }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- ステップ3: 説明変数選択 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">3. 説明変数の選択 / Feature Selection</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            予測の手がかりとなる列を選びます。文字列の列は自動で数値に変換されます。<br>
+                            Select columns that will help with prediction. Text columns are automatically converted to numbers.
+                        </p>
                         <div id="feature-columns-container" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
-                            {% for column in columns %}<div class="form-check"><input class="form-check-input" type="checkbox" id="feat_{{ column }}" name="feature_columns" value="{{ column }}" checked><label class="form-check-label" for="feat_{{ column }}">{{ column }}</label></div>{% endfor %}
+                            {% for column in columns %}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="feat_{{ column }}" name="feature_columns" value="{{ column }}" checked>
+                                <label class="form-check-label" for="feat_{{ column }}">{{ column }}</label>
+                            </div>
+                            {% endfor %}
                         </div>
                     </div>
                 </div>
+
+                <!-- ステップ4: 数値の質的変数（オプション） -->
                 {% if numeric_columns %}
                 <div class="card shadow-sm mb-3">
                     <div class="card-body">
-                        <h5 class="card-title">4. 数値の質的変数（オプション）</h5>
-                        <p class="small text-muted"><i class="bi bi-info-circle-fill"></i> Pclassのように、数値でもカテゴリとして扱いたい列を選択してください。</p>
+                        <h5 class="card-title">4. 数値の質的変数（オプション）/ Numeric Categorical Variables (Optional)</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            数値でもカテゴリとして扱いたい列を選択してください。<br>
+                            Select columns that are numbers but should be treated as categories.
+                        </p>
                         <div id="numeric-categoricals-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 5px;">
                             {% for column in numeric_columns %}
                             <div class="form-check">
@@ -35,34 +109,195 @@
                     </div>
                 </div>
                 {% endif %}
-                <div class="card shadow-sm mb-3"><div class="card-body"><h5 class="card-title">5. 学習の実行</h5><button type="submit" name="action" value="start_learning" class="btn btn-primary w-100 btn-lg loading-trigger">✨ 学習スタート</button></div></div>
+
+                <!-- ステップ5: 学習実行 -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <h5 class="card-title">5. 学習の実行 / Start Training</h5>
+                        <p class="small text-muted mb-3">
+                            <i class="bi bi-info-circle-fill"></i> 
+                            選択した設定で線形回帰モデルを学習します。<br>
+                            Train a linear regression model with the selected settings.
+                        </p>
+                        <button type="submit" name="action" value="start_learning" class="btn btn-primary w-100 btn-lg loading-trigger">
+                            <i class="bi bi-play-circle"></i> ✨ 学習スタート / Start Training
+                        </button>
+                    </div>
+                </div>
             </form>
             {% endif %}
         </div>
     </aside>
+
     <section class="col-lg-8">
-        <h1><i class="bi bi-graph-up"></i> 線形回帰 Playground</h1><p>目的変数に対して、各説明変数がどの程度影響を与えているかを分析します。</p>
-        {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">{{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>{% endfor %}{% endif %}{% endwith %}
-        <hr>
-        {% if filename %}<div class="card shadow-sm mb-3"><div class="card-header">データのプレビュー</div><div class="card-body"><p>ファイル名: <strong>{{ filename }}</strong> | サイズ: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列</strong></p><div class="table-responsive">{{ df_preview_html|safe }}</div></div></div>{% endif %}
-        {% if simple_results %}
-        <div class="row">
-            <div class="col-md-6 mb-3"><div class="card text-center shadow-sm h-100"><div class="card-header">📝 モデルの成績表</div><div class="card-body"><h5 class="card-title">{{ simple_results.score_metric_name }}</h5><p class="display-4">{{ "%.4f"|format(simple_results.score) }}</p></div></div></div>
-            <div class="col-md-6 mb-3"><div class="card shadow-sm h-100"><div class="card-header">🔑 予測への影響度（係数）</div><div class="card-body"><img src="data:image/png;base64,{{ simple_results.coeffs_plot_image }}" alt="Coefficient Plot" class="img-fluid"></div></div></div>
+        <h1><i class="bi bi-graph-up"></i> 線形回帰 Playground / Linear Regression Playground</h1>
+        <p class="lead">
+            目的変数に対して、各説明変数がどの程度影響を与えているかを分析します。<br>
+            Analyze how much each feature affects the target variable.
+        </p>
+
+        <div id="flash-messages-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category in ['success', 'danger', 'warning', 'info'] else 'secondary' }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
         </div>
         <hr>
-        <div id="prediction-anchor" class="card shadow-sm mb-3"><div class="card-header">🔮 未来を予測してみよう！</div><div class="card-body"><p>学習させたモデルを使って、答えの列がない新しいデータの未来を予測します。</p><form id="predict-form" action="/linear_regression#prediction-anchor" method="post" enctype="multipart/form-data"><input type="hidden" name="action" value="predict"><label for="predict_file" class="form-label">予測したいCSVファイルをアップロード</label><div class="input-group"><input type="file" name="predict_file" id="predict_file" class="form-control" required><button type="submit" class="btn btn-info loading-trigger">🚀 予測を実行</button></div></form></div></div>
+
+        <!-- データプレビュー -->
+        {% if filename %}
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <i class="bi bi-table"></i> データのプレビュー / Data Preview
+            </div>
+            <div class="card-body">
+                <p>ファイル名 / File: <strong>{{ filename }}</strong> | サイズ / Size: <strong>{{ df_shape[0] }}行 × {{ df_shape[1] }}列 / {{ df_shape[0] }} rows × {{ df_shape[1] }} columns</strong></p>
+                <div class="table-responsive">{{ df_preview_html|safe }}</div>
+            </div>
+        </div>
         {% endif %}
+
+        <!-- 学習結果 -->
+        {% if simple_results %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card text-center shadow-sm h-100">
+                    <div class="card-header">
+                        <i class="bi bi-clipboard-data"></i> 📝 モデルの成績表 / Model Performance
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">{{ simple_results.score_metric_name }}</h5>
+                        <p class="display-4">{{ "%.4f"|format(simple_results.score) }}</p>
+                        <p class="small text-muted">
+                            この値が1に近いほど、モデルの予測精度が高いことを示します。<br>
+                            Values closer to 1 indicate better prediction accuracy.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header">
+                        <i class="bi bi-bar-chart"></i> 🔑 予測への影響度（係数）/ Feature Importance (Coefficients)
+                    </div>
+                    <div class="card-body">
+                        <img src="data:image/png;base64,{{ simple_results.coeffs_plot_image }}" alt="Coefficient Plot" class="img-fluid">
+                        <p class="small text-muted mt-2">
+                            棒グラフの長さが、その特徴量が予測に与える影響の大きさを示します。<br>
+                            Bar length shows how much each feature affects the prediction.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <hr>
+
+        <!-- 予測セクション -->
+        <div id="prediction-anchor" class="card shadow-sm mb-3">
+            <div class="card-header">
+                <i class="bi bi-crystal-ball"></i> 🔮 未来を予測してみよう！/ Let's Predict the Future!
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    学習させたモデルを使って、答えの列がない新しいデータの未来を予測します。<br>
+                    Use the trained model to predict values for new data without the target column.
+                </p>
+                <form id="predict-form" action="/linear_regression#prediction-anchor" method="post" enctype="multipart/form-data">
+                    <input type="hidden" name="action" value="predict">
+                    <label for="predict_file" class="form-label">予測したいCSVファイルをアップロード / Upload CSV file for prediction</label>
+                    <div class="input-group">
+                        <input type="file" name="predict_file" id="predict_file" class="form-control" required>
+                        <button type="submit" class="btn btn-info loading-trigger">
+                            <i class="bi bi-rocket"></i> 🚀 予測を実行 / Run Prediction
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- 予測結果 -->
         {% if prediction_results_html %}
-        <div id="prediction-result-anchor" class="card shadow-sm mb-3"><div class="card-header">予測結果</div><div class="card-body">
-            {% if prediction_score %}<div class="alert alert-success">🎯 予測の答え合わせ結果 ({{ prediction_score.metric_name }}): <strong>{{ "%.4f"|format(prediction_score.score) }}</strong></div><hr>{% endif %}
-            <div class="table-responsive">{{ prediction_results_html|safe }}</div><hr><h5><i class="bi bi-search"></i> 個別の予測の「理由」を分析 (SHAP)</h5><p>分析したい行の番号（インデックス）を選択して、AIの思考回路を覗いてみましょう。</p><form action="/linear_regression#shap-result-anchor" method="post"><input type="hidden" name="action" value="show_shap"><div class="input-group"><select name="shap_target_index" class="form-select">{% for index in prediction_indices %}<option value="{{ index }}">{{ index }}</option>{% endfor %}</select><button type="submit" class="btn btn-secondary loading-trigger">理由を分析</button></div></form></div></div>
+        <div id="prediction-result-anchor" class="card shadow-sm mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up-arrow"></i> 予測結果 / Prediction Results</span>
+                <form method="POST" style="display: inline;">
+                    <input type="hidden" name="action" value="download_prediction">
+                    <input type="hidden" name="filename" value="{{ filename }}">
+                    <input type="hidden" name="predict_filename" value="{{ predict_filename }}">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-download"></i> 予測結果をダウンロード / Download Results
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                {% if prediction_score %}
+                <div class="alert alert-success">
+                    <i class="bi bi-check-circle"></i> 🎯 予測の答え合わせ結果 / Prediction Accuracy ({{ prediction_score.metric_name }}): <strong>{{ "%.4f"|format(prediction_score.score) }}</strong>
+                </div>
+                <hr>
+                {% endif %}
+                <div class="table-responsive">{{ prediction_results_html|safe }}</div>
+                <p class="text-muted small mt-2">
+                    <i class="bi bi-info-circle"></i> 表示は最初の5行のみです。完全な結果はダウンロードしてください。<br>
+                    <span style="color: #555;">Showing first 5 rows only. Download for complete results.</span>
+                </p>
+                <hr>
+                <h5><i class="bi bi-search"></i> 個別の予測の「理由」を分析 (SHAP) / Analyze Individual Predictions (SHAP)</h5>
+                <p class="mb-3">
+                    分析したい行の番号（インデックス）を選択して、AIの思考回路を覗いてみましょう。<br>
+                    Select a row number to see how AI made that specific prediction.
+                </p>
+                <form action="/linear_regression#shap-result-anchor" method="post">
+                    <input type="hidden" name="action" value="show_shap">
+                    <div class="input-group">
+                        <select name="shap_target_index" class="form-select">
+                            {% for index in prediction_indices %}
+                            <option value="{{ index }}">{{ index }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-secondary loading-trigger">
+                            <i class="bi bi-search"></i> 理由を分析 / Analyze Reason
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         {% endif %}
+
+        <!-- SHAP分析結果 -->
         {% if shap_plot_html %}
-        <div id="shap-result-anchor" class="card shadow-sm mb-3"><div class="card-header">SHAP分析結果</div><div class="card-body"><div class="alert alert-info"><h5 class="alert-heading">📈 グラフの読み方</h5><p>このグラフは、AIの予測結果（太字の数字）に対して、どの情報がどのように影響したかを示します。</p><ul><li><b style="color: #ff0051;">プラスに働いた情報（赤色）</b>：予測値を押し上げる方向に影響しました。</li><li><b style="color: #008bfb;">マイナスに働いた情報（青色）</b>：予測値を押し下げる方向に影響しました。</li></ul><p class="mb-0"><code>base value</code>は、何も情報がないときの平均的な予測値です。</p></div><div class="shap-plot-container">{{ shap_plot_html|safe }}</div></div></div>
+        <div id="shap-result-anchor" class="card shadow-sm mb-3">
+            <div class="card-header">
+                <i class="bi bi-lightbulb"></i> SHAP分析結果 / SHAP Analysis Results
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h5 class="alert-heading"><i class="bi bi-graph-up"></i> 📈 グラフの読み方 / How to Read This Graph</h5>
+                    <p>このグラフは、AIの予測結果（太字の数字）に対して、どの情報がどのように影響したかを示します。<br>
+                    This graph shows how each piece of information affected AI's prediction (bold number).</p>
+                    <ul>
+                        <li><b style="color: #ff0051;">プラスに働いた情報（赤色）/ Positive influence (red)</b>：予測値を押し上げる方向に影響しました。<br>
+                        <span style="color: #555;">Pushed the prediction value higher.</span></li>
+                        <li><b style="color: #008bfb;">マイナスに働いた情報（青色）/ Negative influence (blue)</b>：予測値を押し下げる方向に影響しました。<br>
+                        <span style="color: #555;">Pushed the prediction value lower.</span></li>
+                    </ul>
+                    <p class="mb-0"><code>base value</code>は、何も情報がないときの平均的な予測値です。<br>
+                    <span style="color: #555;"><code>base value</code> is the average prediction when no information is available.</span></p>
+                </div>
+                <div class="shap-plot-container">{{ shap_plot_html|safe }}</div>
+            </div>
+        </div>
         {% endif %}
     </section>
 </div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const loadingOverlay = document.getElementById('loading-overlay');

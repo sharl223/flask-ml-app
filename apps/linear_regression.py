@@ -1,203 +1,440 @@
+"""
+AI Playground - 線形回帰
+線形回帰モデルの学習と予測
+"""
+
 import os
 import pandas as pd
 import numpy as np
-import joblib
 import shap
 import io
-import base64
-import matplotlib.pyplot as plt
-import japanize_matplotlib
-from flask import (
-    Blueprint, render_template, request, session, flash,
-    current_app, url_for, redirect
-)
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
-from sklearn.preprocessing import StandardScaler
+from flask import (
+    Blueprint, render_template, request, session, flash,
+    current_app, url_for, redirect, send_from_directory
+)
+from utils import (
+    DataProcessor, ModelManager, VisualizationHelper, 
+    FileManager, ErrorHandler, ValidationHelper,
+    logger, safe_float, safe_int
+)
 
+# Blueprintの定義
 linear_regression_bp = Blueprint(
     'linear_regression', __name__,
     template_folder='../templates',
     static_folder='../static'
 )
 
+# セッションキー
 SESSION_KEY = 'linear_regression_context'
-
-def _prepare_data_simple(df, feature_columns, numeric_categoricals, scaler=None, train_columns=None):
-    """データの前処理。数値の質的変数を指定可能に。"""
-    X = df[feature_columns].copy()
-    
-    # 指定された数値列をカテゴリ型に変換
-    for col in numeric_categoricals:
-        if col in X.columns:
-            X[col] = X[col].astype('category')
-
-    # ダミー変数化（object型とcategory型が対象になる）
-    X = pd.get_dummies(X, drop_first=True, dtype=float)
-
-    if train_columns is not None:
-        # 学習時と列を揃える（予測時）
-        missing_cols = set(train_columns) - set(X.columns)
-        for c in missing_cols:
-            X[c] = 0
-        X = X[train_columns]
-    else:
-        # 学習時
-        train_columns = X.columns.tolist()
-
-    numeric_cols = X.select_dtypes(include=['number']).columns
-    
-    if scaler is None:
-        # 学習時
-        scaler = StandardScaler()
-        if len(numeric_cols) > 0:
-            X[numeric_cols] = scaler.fit_transform(X[numeric_cols])
-    else:
-        # 予測時
-        if len(numeric_cols) > 0:
-            X[numeric_cols] = scaler.transform(X[numeric_cols])
-        
-    return X, scaler, train_columns
-
-def _create_coefficient_plot(coeffs):
-    """モデルの係数を可視化するグラフを生成し、画像データを返す"""
-    top_coeffs = pd.concat([coeffs.head(10), coeffs.tail(10)]).sort_values('係数', ascending=True)
-    
-    plt.figure(figsize=(10, 8))
-    plt.barh(top_coeffs.index, top_coeffs['係数'], color=top_coeffs['係数'].map(lambda x: 'tomato' if x > 0 else 'dodgerblue'))
-    plt.title('予測への影響度（係数）', fontsize=18)
-    plt.xlabel('係数の大きさ', fontsize=14)
-    plt.tick_params(axis='both', labelsize=12)
-    plt.grid(axis='x', linestyle='--', alpha=0.6)
-    plt.tight_layout()
-
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
-    img_str = base64.b64encode(buf.read()).decode('utf-8')
-    plt.close()
-    return img_str
 
 @linear_regression_bp.route('/linear_regression', methods=['GET', 'POST'])
 def playground():
+    """
+    線形回帰プレイグラウンドのメインルート
+    
+    Returns:
+        プレイグラウンドページのテンプレート
+    """
     if request.method == 'GET':
         context = session.get(SESSION_KEY, {})
-        context.setdefault('form_values', {})
-        context.setdefault('filename', None)
-        context.setdefault('df_shape', None)
-        context.setdefault('df_preview_html', None)
+        # リセット後の確実な初期化
+        if not context:
+            context = {
+                'form_values': {},
+                'filename': None,
+                'df_shape': None,
+                'df_preview_html': None,
+                'columns': [],
+                'numeric_columns': [],
+                'simple_results': None,
+                'prediction_results_html': None,
+                'shap_plot_html': None,
+                'prediction_score': None,
+                'prediction_indices': []
+            }
+        else:
+            # 既存のコンテキストにデフォルト値を設定
+            context.setdefault('form_values', {})
+            context.setdefault('filename', None)
+            context.setdefault('df_shape', None)
+            context.setdefault('df_preview_html', None)
+            context.setdefault('columns', [])
+            context.setdefault('numeric_columns', [])
+            context.setdefault('simple_results', None)
+            context.setdefault('prediction_results_html', None)
+            context.setdefault('shap_plot_html', None)
+            context.setdefault('prediction_score', None)
+            context.setdefault('prediction_indices', [])
+        
         return render_template('linear_regression.html', **context)
 
     action = request.form.get('action')
     context = session.get(SESSION_KEY, {})
-    context['form_values'] = request.form.to_dict(flat=False)
+    
+    # uploadアクションの場合は既存のform_valuesを保持、それ以外は新しいform_valuesを設定
+    if action == 'upload':
+        # uploadアクションの場合は既存のform_valuesを保持
+        context['form_values'] = context.get('form_values', {})
+    else:
+        # 他のアクションの場合は新しいform_valuesを設定
+        context['form_values'] = request.form.to_dict(flat=False)
 
     try:
         if action == 'upload':
-            file = request.files.get('file')
-            if not file or file.filename == '':
-                flash('ファイルが選択されていません。', 'warning')
-                return redirect(request.url)
-            filename = file.filename
-            upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], filename)
-            file.save(upload_path)
+            context = handle_file_upload(context)
             
-            context = {'filename': filename, 'form_values': {}}
-            df = pd.read_csv(upload_path, index_col=0)
-            context['columns'] = df.columns.tolist()
-            context['df_shape'] = df.shape
-            context['df_preview_html'] = df.head().to_html(classes='table table-sm table-striped table-hover', border=0)
-            context['numeric_columns'] = df.select_dtypes(include=np.number).columns.tolist()
-            flash(f'ファイル "{filename}" が正常にアップロードされました。', 'success')
-
         elif action == 'start_learning':
-            target_column = request.form['target_column']
-            feature_columns = request.form.getlist('feature_columns')
-            numeric_categoricals = request.form.getlist('numeric_categoricals')
-
-            df = pd.read_csv(os.path.join(current_app.config['UPLOAD_FOLDER'], context['filename']), index_col=0)
-            y = df[target_column]
-            X, scaler, train_columns = _prepare_data_simple(df, feature_columns, numeric_categoricals)
-
-            model = LinearRegression()
-            model.fit(X, y)
+            context = handle_model_training(context)
             
-            predictions = model.predict(X)
-            score = r2_score(y, predictions)
-            
-            coeffs = pd.DataFrame(
-                model.coef_.flatten(),
-                index=train_columns,
-                columns=['係数']
-            ).sort_values('係数', ascending=False)
-            
-            context['simple_results'] = {
-                'score': score,
-                'score_metric_name': "決定係数 R2",
-                'coeffs_plot_image': _create_coefficient_plot(coeffs)
-            }
-            
-            model_filename = f"linreg_{os.path.splitext(context['filename'])[0]}.joblib"
-            model_path = os.path.join(current_app.config['MODELS_FOLDER'], model_filename)
-            joblib.dump({
-                'model': model, 'scaler': scaler, 'train_columns': train_columns, 
-                'feature_columns': feature_columns, 'numeric_categoricals': numeric_categoricals, 'target_column': target_column
-            }, model_path)
-            context['model_path'] = model_path
-            context['X_train_df_for_shap'] = X.to_json(orient='split')
-            flash('線形回帰モデルの学習が完了しました。', 'success')
-
         elif action == 'predict':
-            predict_file = request.files.get('predict_file')
-            if not predict_file:
-                flash('予測用のファイルが選択されていません。', 'warning')
-                return redirect(request.url)
-
-            saved_data = joblib.load(context['model_path'])
+            context = handle_prediction(context)
             
-            predict_filename = predict_file.filename
-            predict_upload_path = os.path.join(current_app.config['UPLOAD_FOLDER'], predict_filename)
-            predict_file.save(predict_upload_path)
-            predict_df = pd.read_csv(predict_upload_path, index_col=0)
-            context['predict_filename'] = predict_filename
-            
-            y_true = predict_df[saved_data['target_column']] if saved_data['target_column'] in predict_df.columns else None
-            
-            X_predict, _, _ = _prepare_data_simple(
-                predict_df, 
-                saved_data['feature_columns'],
-                saved_data.get('numeric_categoricals', []),
-                scaler=saved_data['scaler'], 
-                train_columns=saved_data['train_columns']
-            )
-            
-            predictions = saved_data['model'].predict(X_predict)
-            
-            if y_true is not None:
-                score = r2_score(y_true, predictions)
-                context['prediction_score'] = {'score': score, 'metric_name': "決定係数 R2"}
-                
-            predict_df[f'predicted_{saved_data["target_column"]}'] = predictions
-            context['X_predict_df_for_shap'] = X_predict.to_json(orient='split')
-            context['prediction_results_html'] = predict_df.to_html(classes='table table-striped table-hover', border=0, table_id='prediction-table')
-            context['prediction_indices'] = predict_df.index.tolist()
-            flash('予測が完了しました。', 'info')
-
         elif action == 'show_shap':
-            shap_target_index = int(request.form['shap_target_index'])
-            saved_data = joblib.load(context['model_path'])
-            model = saved_data['model']
-            X_train = pd.read_json(context['X_train_df_for_shap'], orient='split')
-            X_predict = pd.read_json(context['X_predict_df_for_shap'], orient='split')
-            explainer = shap.LinearExplainer(model, X_train)
-            shap_values = explainer(X_predict)
-            plot_object = shap.force_plot(explainer.expected_value, shap_values.values[shap_target_index,:], X_predict.iloc[shap_target_index,:], show=False)
-            with io.StringIO() as f:
-                shap.save_html(f, plot_object, full_html=False)
-                context['shap_plot_html'] = f.getvalue()
+            context = handle_shap_analysis(context)
+            
+        elif action == 'download_prediction':
+            return handle_download_prediction(context)
+            
+        elif action == 'reset':
+            # データリセット
+            session.pop(SESSION_KEY, None)
+            # セッションファイルも削除を試行
+            try:
+                if 'SESSION_FILE_DIR' in current_app.config:
+                    session_dir = current_app.config['SESSION_FILE_DIR']
+                    if os.path.exists(session_dir):
+                        import glob
+                        session_files = glob.glob(os.path.join(session_dir, '*'))
+                        for file in session_files:
+                            try:
+                                os.remove(file)
+                                logger.info(f"セッションファイルを削除しました: {file}")
+                            except Exception as e:
+                                logger.warning(f"セッションファイルの削除に失敗: {file}, エラー: {e}")
+            except Exception as e:
+                logger.warning(f"セッションファイル削除でエラー: {e}")
+            
+            # 空のコンテキストを設定して確実にリセット
+            session[SESSION_KEY] = {
+                'form_values': {},
+                'filename': None,
+                'df_shape': None,
+                'df_preview_html': None,
+                'columns': [],
+                'numeric_columns': [],
+                'simple_results': None,
+                'prediction_results_html': None,
+                'shap_plot_html': None,
+                'prediction_score': None,
+                'prediction_indices': []
+            }
+            flash('線形回帰データがリセットされました。', 'info')
+            return redirect(url_for('linear_regression.playground'))
+            
+        else:
+            flash('無効なアクションです。', 'warning')
 
     except Exception as e:
-        flash(f'エラーが発生しました: {e}', 'danger')
-        
+        error_message = ErrorHandler.handle_model_error(e)
+        flash(f'エラーが発生しました: {error_message}', 'danger')
+        logger.error(f"線形回帰プレイグラウンドでエラーが発生しました: {e}")
+
     session[SESSION_KEY] = context
     return redirect(url_for('linear_regression.playground'))
+
+def handle_file_upload(context):
+    """
+    ファイルアップロードを処理
+    
+    Args:
+        context: 現在のコンテキスト
+        
+    Returns:
+        更新されたコンテキスト
+    """
+    try:
+        file = request.files.get('file')
+        upload_path = FileManager.save_uploaded_file(
+            file, 
+            current_app.config['UPLOAD_FOLDER']
+        )
+        
+        filename = os.path.basename(upload_path)
+        context = {'filename': filename, 'form_values': {}}
+        
+        # CSVファイルの読み込みと検証
+        df = DataProcessor.load_csv_safe(upload_path, index_col=0)
+        
+        # データの基本情報を設定
+        context['columns'] = df.columns.tolist()
+        context['df_shape'] = df.shape
+        context['df_preview_html'] = df.head().to_html(
+            classes='table table-sm table-striped table-hover', 
+            border=0
+        )
+        context['numeric_columns'] = df.select_dtypes(include=np.number).columns.tolist()
+        
+        flash(f'ファイル "{filename}" が正常にアップロードされました。', 'success')
+        logger.info(f"ファイルアップロード完了: {filename}")
+        
+        return context
+        
+    except Exception as e:
+        error_message = ErrorHandler.handle_upload_error(e)
+        flash(error_message, 'warning')
+        raise
+
+def handle_model_training(context):
+    """
+    モデルの学習を処理
+    
+    Args:
+        context: 現在のコンテキスト
+        
+    Returns:
+        更新されたコンテキスト
+    """
+    try:
+        # フォームデータの取得
+        target_column = request.form['target_column']
+        feature_columns = request.form.getlist('feature_columns')
+        numeric_categoricals = request.form.getlist('numeric_categoricals')
+        
+        # データの読み込みと前処理
+        df = DataProcessor.load_csv_safe(
+            os.path.join(current_app.config['UPLOAD_FOLDER'], context['filename']), 
+            index_col=0
+        )
+        y = df[target_column]
+        X, scaler, train_columns = DataProcessor.prepare_data_for_linear(
+            df, feature_columns, numeric_categoricals
+        )
+        
+        # モデルの作成と学習
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        # 予測と評価
+        predictions = model.predict(X)
+        score = r2_score(y, predictions)
+        
+        # 係数の分析
+        coeffs = pd.DataFrame(
+            model.coef_.flatten(),
+            index=train_columns,
+            columns=['係数']
+        ).sort_values('係数', ascending=False)
+        
+        # 係数プロットの生成
+        coeffs_plot_image = VisualizationHelper.create_coefficient_plot(coeffs)
+        
+        # 結果の保存
+        context['simple_results'] = {
+            'score': score,
+            'score_metric_name': "決定係数 R2",
+            'coeffs_plot_image': coeffs_plot_image
+        }
+        
+        # モデルの保存
+        model_filename = f"linreg_{os.path.splitext(context['filename'])[0]}.joblib"
+        model_data = {
+            'model': model, 
+            'scaler': scaler, 
+            'train_columns': train_columns, 
+            'feature_columns': feature_columns, 
+            'numeric_categoricals': numeric_categoricals, 
+            'target_column': target_column
+        }
+        
+        model_path = ModelManager.save_model(
+            model_data, 
+            model_filename, 
+            current_app.config['MODELS_FOLDER']
+        )
+        
+        context['model_path'] = model_path
+        context['X_train_df_for_shap'] = X.to_json(orient='split')
+        
+        flash('線形回帰モデルの学習が完了しました。', 'success')
+        logger.info("線形回帰モデル学習完了")
+        
+        return context
+        
+    except Exception as e:
+        logger.error(f"線形回帰モデル学習でエラーが発生しました: {e}")
+        raise
+
+def handle_prediction(context):
+    """
+    予測を処理
+    
+    Args:
+        context: 現在のコンテキスト
+        
+    Returns:
+        更新されたコンテキスト
+    """
+    try:
+        predict_file = request.files.get('predict_file')
+        if not predict_file:
+            flash('予測用のファイルが選択されていません。', 'warning')
+            return context
+        
+        # 予測ファイルの保存
+        predict_upload_path = FileManager.save_uploaded_file(
+            predict_file, 
+            current_app.config['UPLOAD_FOLDER']
+        )
+        predict_filename = os.path.basename(predict_upload_path)
+        
+        # モデルの読み込み
+        saved_data = ModelManager.load_model(context['model_path'])
+        
+        # 予測データの読み込みと前処理
+        predict_df = DataProcessor.load_csv_safe(predict_upload_path, index_col=0)
+        context['predict_filename'] = predict_filename
+        
+        # ターゲット列の存在確認
+        y_true = predict_df[saved_data['target_column']] if saved_data['target_column'] in predict_df.columns else None
+        
+        # 予測データの前処理
+        X_predict, _, _ = DataProcessor.prepare_data_for_linear(
+            predict_df, 
+            saved_data['feature_columns'],
+            saved_data.get('numeric_categoricals', []),
+            scaler=saved_data['scaler'], 
+            train_columns=saved_data['train_columns']
+        )
+        
+        # 予測の実行
+        predictions = saved_data['model'].predict(X_predict)
+        
+        # 評価指標の計算（ターゲットが存在する場合）
+        if y_true is not None:
+            score = r2_score(y_true, predictions)
+            context['prediction_score'] = {
+                'score': score, 
+                'metric_name': "決定係数 R2"
+            }
+        
+        # 予測結果の追加
+        predict_df[f'predicted_{saved_data["target_column"]}'] = predictions
+        context['X_predict_df_for_shap'] = X_predict.to_json(orient='split')
+        context['prediction_results_html'] = predict_df.head(5).to_html(
+            classes='table table-striped table-hover', 
+            border=0, 
+            table_id='prediction-table'
+        )
+        context['prediction_indices'] = predict_df.index.tolist()
+        
+        flash('予測が完了しました。', 'info')
+        logger.info("線形回帰予測完了")
+        
+        return context
+        
+    except Exception as e:
+        logger.error(f"線形回帰予測でエラーが発生しました: {e}")
+        raise
+
+def handle_shap_analysis(context):
+    """
+    SHAP分析を処理
+    
+    Args:
+        context: 現在のコンテキスト
+        
+    Returns:
+        更新されたコンテキスト
+    """
+    try:
+        shap_target_index = safe_int(request.form['shap_target_index'], 0)
+        
+        # モデルの読み込み
+        saved_data = ModelManager.load_model(context['model_path'])
+        model = saved_data['model']
+        
+        # 学習データと予測データの読み込み
+        X_train = pd.read_json(context['X_train_df_for_shap'], orient='split')
+        X_predict = pd.read_json(context['X_predict_df_for_shap'], orient='split')
+        
+        # SHAP分析の実行
+        explainer = shap.LinearExplainer(model, X_train)
+        shap_values = explainer(X_predict)
+        
+        # SHAPプロットの生成
+        plot_object = shap.force_plot(
+            explainer.expected_value, 
+            shap_values.values[shap_target_index,:], 
+            X_predict.iloc[shap_target_index,:], 
+            show=False
+        )
+        
+        with io.StringIO() as f:
+            shap.save_html(f, plot_object, full_html=False)
+            context['shap_plot_html'] = f.getvalue()
+        
+        logger.info("線形回帰SHAP分析完了")
+        return context
+        
+    except Exception as e:
+        logger.error(f"線形回帰SHAP分析でエラーが発生しました: {e}")
+        raise
+
+def handle_download_prediction(context):
+    """
+    予測結果のダウンロードを処理
+    
+    Args:
+        context: 現在のコンテキスト
+        
+    Returns:
+        ダウンロードファイル
+    """
+    try:
+        # 予測結果のファイルを取得
+        predict_file = context.get('predict_filename')
+        if not predict_file:
+            flash('予測結果のファイルが見つかりません。', 'warning')
+            return redirect(url_for('linear_regression.playground'))
+        
+        # ファイルのパスを取得
+        predict_path = os.path.join(current_app.config['UPLOAD_FOLDER'], predict_file)
+        if not os.path.exists(predict_path):
+            flash('予測結果のファイルが見つかりません。', 'warning')
+            return redirect(url_for('linear_regression.playground'))
+        
+        # モデルの読み込み
+        saved_data = ModelManager.load_model(context['model_path'])
+        
+        # 予測データの読み込みと前処理
+        predict_df = DataProcessor.load_csv_safe(predict_path, index_col=0)
+        
+        # 予測データの前処理
+        X_predict, _, _ = DataProcessor.prepare_data_for_linear(
+            predict_df, 
+            saved_data['feature_columns'],
+            saved_data.get('numeric_categoricals', []),
+            scaler=saved_data['scaler'], 
+            train_columns=saved_data['train_columns']
+        )
+        
+        # 予測の実行
+        predictions = saved_data['model'].predict(X_predict)
+        
+        # 予測結果の追加
+        predict_df[f'predicted_{saved_data["target_column"]}'] = predictions
+        
+        # 予測結果ファイルの保存
+        output_filename = f"predicted_{predict_file}"
+        output_path = os.path.join(current_app.config['UPLOAD_FOLDER'], output_filename)
+        predict_df.to_csv(output_path, index=True)
+        
+        # ファイルをダウンロード
+        return send_from_directory(current_app.config['UPLOAD_FOLDER'], output_filename, as_attachment=True)
+        
+    except Exception as e:
+        logger.error(f"予測結果のダウンロードでエラーが発生しました: {e}")
+        raise
