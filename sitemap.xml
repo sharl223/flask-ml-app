@@ -5,7 +5,7 @@
     <!-- Homepage -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/" />
@@ -16,7 +16,7 @@
     <!-- CSV Processing -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/csv_processor</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/csv_processor" />
@@ -27,7 +27,7 @@
     <!-- Linear Regression -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/linear_regression</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/linear_regression" />
@@ -38,7 +38,7 @@
     <!-- Logistic Regression -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/logistic_regression</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/logistic_regression" />
@@ -49,7 +49,7 @@
     <!-- LightGBM Playground -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/lgbm_playground</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/lgbm_playground" />
@@ -60,7 +60,7 @@
     <!-- Sample Datasets -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/csv_processor_datasets</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>monthly</changefreq>
         <priority>0.7</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/csv_processor_datasets" />
@@ -71,7 +71,7 @@
     <!-- Privacy Policy -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/privacy</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/privacy" />
@@ -82,7 +82,7 @@
     <!-- Terms of Service -->
     <url>
         <loc>https://flask-ml-app-g0mo.onrender.com/terms</loc>
-        <lastmod>2025-01-24</lastmod>
+        <lastmod>2025-06-25</lastmod>
         <changefreq>yearly</changefreq>
         <priority>0.3</priority>
         <xhtml:link rel="alternate" hreflang="ja" href="https://flask-ml-app-g0mo.onrender.com/terms" />
