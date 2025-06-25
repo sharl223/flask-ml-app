@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://flask-ml-app-g0mo.onrender.com/sitemap.xml 

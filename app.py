@@ -103,13 +103,23 @@ def create_app(config_name: str = None) -> Flask:
     @app.route('/sitemap.xml')
     def sitemap():
         """XMLサイトマップを提供"""
-        return send_file('sitemap.xml', mimetype='application/xml')
+        response = make_response(send_file('sitemap.xml'))
+        response.headers['Content-Type'] = 'application/xml'
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
 
     # robots.txt
     @app.route('/robots.txt')
     def robots():
         """robots.txtを提供"""
-        return send_file('robots.txt', mimetype='text/plain')
+        response = make_response("""User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://flask-ml-app-g0mo.onrender.com/sitemap.xml""")
+        response.headers['Content-Type'] = 'text/plain'
+        response.headers['Cache-Control'] = 'public, max-age=3600'
+        return response
 
     # プライバシーポリシー
     @app.route('/privacy')
